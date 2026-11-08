@@ -1,0 +1,65 @@
+name: FocusBar
+
+options:
+  bundleIdPrefix: com.kanharithsok
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+packages:
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: 1.10.0
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: NO
+    DEAD_CODE_STRIPPING: YES
+    CLANG_ENABLE_MODULES: YES
+
+targets:
+  FocusBar:
+    type: application
+    platform: macOS
+    sources:
+      - path: FocusBar
+    dependencies:
+      - package: KeyboardShortcuts
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kanharithsok.FocusBar
+        PRODUCT_NAME: FocusBar
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: FocusBar
+        INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        INFOPLIST_KEY_NSAppleEventsUsageDescription: "FocusBar uses Apple Events only to inspect the active tab in Safari or Google Chrome when browser protection is enabled. It does not read page content."
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 Kanharith Sok. All rights reserved."
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: ""
+    scheme:
+      testTargets:
+        - FocusBarTests
+      gatherCoverageData: false
+
+  FocusBarTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: FocusBarTests
+    dependencies:
+      - target: FocusBar
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kanharithsok.FocusBarTests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/FocusBar.app/Contents/MacOS/FocusBar"
+        BUNDLE_LOADER: "$(TEST_HOST)"
