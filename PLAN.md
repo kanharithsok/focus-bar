@@ -137,7 +137,7 @@ Status: **implemented, verified by build + unit tests**
 
 - Daily/weekly focus minutes, average rating, blocked-attempt counts.
 - History refinements, empty states, error banners, accessibility labels.
-- README, CLAUDE.md, PLAN.md.
+- README.md, AGENTS.md (canonical agent instructions), CLAUDE.md compatibility symlink, PLAN.md.
 - No streaks, gamification, or guilt messaging.
 
 Acceptance:
