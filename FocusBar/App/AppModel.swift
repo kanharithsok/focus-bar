@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import AppKit
+import KeyboardShortcuts
 
 @MainActor
 @Observable
@@ -11,6 +12,7 @@ final class AppModel {
     let captures: CaptureStore
     let intentions: IntentionStore
     let sessionManager: SessionManager
+    let capturePanel: CapturePanelController
 
     private(set) var startupWarning: String?
     private(set) var hasStarted = false
@@ -35,6 +37,7 @@ final class AppModel {
         self.captures = captures
         self.intentions = intentions
         self.sessionManager = sessionManager
+        self.capturePanel = CapturePanelController()
 
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification,
@@ -59,6 +62,27 @@ final class AppModel {
 
         let issues = await persistence.consumeLoadIssues()
         startupWarning = issues.first
+
+        KeyboardShortcuts.onKeyUp(for: .captureDistraction) { [weak self] in
+            Task { @MainActor in
+                self?.showCapturePanel()
+            }
+        }
+    }
+
+    func showCapturePanel() {
+        let active = sessionManager.activeSession
+        capturePanel.show(focusObject: active?.focusObject) { [weak self] text in
+            guard let self else { return }
+            let sessionID = self.sessionManager.activeSession?.id
+            Task {
+                await self.captures.add(
+                    text: text,
+                    sessionID: sessionID,
+                    source: .distraction
+                )
+            }
+        }
     }
 
     func dismissStartupWarning() {

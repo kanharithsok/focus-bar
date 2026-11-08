@@ -248,6 +248,46 @@ final class SessionManagerTests: XCTestCase {
         XCTAssertEqual(env.stats.sessions.count, 1, "Restore must not duplicate history")
     }
 
+    func testScatterfocusModesStoreTheirContext() async throws {
+        let env = TestEnvironment()
+        await env.loadAll()
+        defer { env.cleanup() }
+
+        let problem = try await env.manager.startScatterfocus(
+            mode: .problemCrunching,
+            minutes: 10,
+            question: "  How should I structure the migration?  "
+        )
+        XCTAssertEqual(problem.scatterfocusMode, .problemCrunching)
+        XCTAssertEqual(problem.problemQuestion, "How should I structure the migration?")
+        XCTAssertEqual(problem.focusObject, "How should I structure the migration?")
+        XCTAssertEqual(problem.plannedDuration, 10 * 60)
+
+        await env.manager.endScatterfocusEarly()
+        try await env.manager.submitReview(rating: nil, note: nil)
+
+        let habitual = try await env.manager.startScatterfocus(mode: .habitual, minutes: 10)
+        XCTAssertEqual(habitual.scatterfocusMode, .habitual)
+        XCTAssertNil(habitual.problemQuestion)
+        XCTAssertEqual(habitual.focusObject, "Scatterfocus: Habitual")
+    }
+
+    func testScatterfocusCapturesAreSessionAssociated() async throws {
+        let env = TestEnvironment()
+        await env.loadAll()
+        defer { env.cleanup() }
+
+        let session = try await env.manager.startScatterfocus(mode: .capture, minutes: 10)
+        await env.captures.add(text: "An unexpected connection", sessionID: session.id, source: .scatterfocus)
+        await env.captures.add(text: "General note", sessionID: nil, source: .distraction)
+
+        XCTAssertEqual(env.captures.captures(for: session.id).count, 1)
+        XCTAssertEqual(env.captures.captures(for: session.id, source: .scatterfocus).first?.text, "An unexpected connection")
+
+        await env.manager.endScatterfocusEarly()
+        XCTAssertEqual(env.captures.captures(for: env.manager.pendingReview!.id).count, 1)
+    }
+
     func testScatterfocusBlockingSuspensionPersists() async throws {
         let env = TestEnvironment()
         await env.loadAll()
