@@ -85,6 +85,22 @@ final class SessionManagerTests: XCTestCase {
         }
     }
 
+    func testSessionStoresSelectedBlocklistPreset() async throws {
+        let env = TestEnvironment()
+        await env.loadAll()
+        defer { env.cleanup() }
+
+        let preset = BlocklistPreset(name: "Custom sites", websiteDomains: ["example.com"])
+        try await env.manager.startHyperfocus(
+            focusObject: "Deep work",
+            minutes: 25,
+            preset: preset
+        )
+
+        XCTAssertEqual(env.manager.activeSession?.blocklistPresetID, preset.id)
+        XCTAssertEqual(env.manager.activeSession?.blocklistName, "Custom sites")
+    }
+
     func testExpirationCompletesSessionAtPlannedEnd() async throws {
         let env = TestEnvironment()
         await env.loadAll()

@@ -8,6 +8,7 @@ struct IdleView: View {
     @State private var durationChoice: DurationChoice = .twentyFive
     @State private var customMinutes = 45
     @State private var selectedIntentionID: UUID?
+    @State private var selectedPresetID: UUID?
     @State private var scatterMode: ScatterfocusMode = .capture
     @State private var scatterMinutes = 10
     @State private var problemQuestion = ""
@@ -102,6 +103,11 @@ struct IdleView: View {
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .onAppear {
+            if selectedPresetID == nil {
+                selectedPresetID = app.settings.settings.selectedPresetID
+            }
+        }
     }
 
     // MARK: - Hyperfocus
@@ -138,6 +144,8 @@ struct IdleView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+
+                presetPicker
 
                 if !todayIntentions.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
@@ -179,11 +187,26 @@ struct IdleView: View {
         }
     }
 
+    private var presetPicker: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            SectionLabel(text: "Blocklist")
+            Picker("Blocklist", selection: $selectedPresetID) {
+                Text("None").tag(UUID?.none)
+                ForEach(app.settings.settings.presets) { preset in
+                    Text(preset.name).tag(Optional(preset.id))
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+        }
+    }
+
     private func startHyperfocusIfPossible() {
         guard canStartHyperfocus else { return }
         isStarting = true
         errorMessage = nil
         let intention = todayIntentions.first { $0.id == selectedIntentionID }
+        let preset = app.settings.preset(id: selectedPresetID)
 
         Task {
             defer { isStarting = false }
@@ -192,7 +215,7 @@ struct IdleView: View {
                     focusObject: focusObject,
                     minutes: minutes,
                     intention: intention,
-                    preset: app.settings.selectedPreset
+                    preset: preset
                 )
                 focusObject = ""
                 selectedIntentionID = nil
@@ -226,6 +249,8 @@ struct IdleView: View {
                     TextField("What question do you want to hold?", text: $problemQuestion)
                         .textFieldStyle(.roundedBorder)
                 }
+
+                presetPicker
 
                 HStack(spacing: 8) {
                     Text("Break length")
@@ -280,6 +305,7 @@ struct IdleView: View {
         guard canStartBreak else { return }
         isStarting = true
         errorMessage = nil
+        let preset = app.settings.preset(id: selectedPresetID)
 
         Task {
             defer { isStarting = false }
@@ -288,7 +314,7 @@ struct IdleView: View {
                     mode: scatterMode,
                     minutes: scatterMinutes,
                     question: problemQuestion,
-                    preset: app.settings.selectedPreset
+                    preset: preset
                 )
                 problemQuestion = ""
             } catch {
