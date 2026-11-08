@@ -193,13 +193,36 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBar \
   -destination 'platform=macOS' test CODE_SIGNING_ALLOWED=NO
 ```
 
-## 7. Current state / next actions
+## 7. Verification log
+
+| Date | Check | Result |
+| --- | --- | --- |
+| 2026-11-09 | `xcodebuild ... build` (Debug, macOS) | **BUILD SUCCEEDED** |
+| 2026-11-09 | `xcodebuild ... test` (macOS) | **62 tests, 0 failures** |
+| 2026-11-09 | Built `Info.plist` | `LSUIElement = true`, `NSAppleEventsUsageDescription` present |
+| 2026-11-09 | Built resources | `blocked.html` present in app bundle |
+| 2026-11-09 | `AppleScriptRunner` tests | success, timeout, permission (-1743), execution error all mapped correctly |
+| 2026-11-09 | Session/persistence/statistics tests | state transitions, relaunch restore, expiry, review, intentions, captures, hostname matching, dedup, stats all pass |
+| 2026-11-09 | Launch smoke test | process launched, LaunchServices type `UIElement`, default `settings.json` written at launch |
+
+Automated coverage includes:
+- session transitions, validation, expiration, sleep/relaunch-style clock jumps;
+- early-end reason/commit-mode/emergency rules;
+- review persistence and intention/capture association;
+- versioned persistence, atomic replacement, corrupt-file quarantine, newer-schema rejection;
+- hostname normalization/subdomain matching and unrelated-domain rejection;
+- blocked-attempt dedup and statistics derivation;
+- blocking-plan decisions and AppleScript timeout/permission mapping.
+
+## 8. Current state / next actions
 
 - v1 feature set implemented (M1–M5).
-- Automated build and unit tests pass in this environment (results recorded in the milestone report).
+- Automated build and unit tests pass in this environment; see the verification log above.
 - Remaining work is manual, permission-dependent verification:
-  1. Launch the app, verify menu-bar-only behavior and popover.
+  1. Launch the app, verify menu-bar-only behavior and popover layout.
   2. Grant Automation access and test Safari/Chrome active-tab redirect.
   3. Test app hide / terminate-request behavior with a selected app.
   4. Verify the global capture shortcut and panel feel.
+  5. Confirm notification permission behavior.
 - M6 requires explicit approval and is not started.
+- Optional macOS Focus/Shortcuts integration is not implemented; it was marked optional in the brief.

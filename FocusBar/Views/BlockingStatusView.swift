@@ -15,7 +15,7 @@ struct BlockingStatusView: View {
                     Spacer()
                     StatusPill(
                         text: status.isActive ? "Best effort" : "Off",
-                        color: status.isActive ? .green : .secondary
+                        color: status.isActive ? .orange : .secondary
                     )
                 }
 
@@ -33,7 +33,9 @@ struct BlockingStatusView: View {
                         detail: "\(status.browserNames.joined(separator: " + ")) · \(status.domainCount) domains"
                     )
 
-                    if status.websiteBlockingEnabled {
+                    if status.websiteBlockingEnabled
+                        || status.browserPermission == .denied
+                        || status.browserPermission == .timedOut {
                         permissionStatus
                     }
 

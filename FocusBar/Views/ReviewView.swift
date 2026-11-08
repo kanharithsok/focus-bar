@@ -158,6 +158,11 @@ struct ReviewView: View {
                 rating = record.rating
                 note = record.note ?? ""
             }
+            .onChange(of: record.id) { _, _ in
+                rating = record.rating
+                note = record.note ?? ""
+                didInitialize = true
+            }
         } else {
             Text("Nothing to review")
                 .foregroundStyle(.secondary)

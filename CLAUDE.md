@@ -37,6 +37,22 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBar \
 - Run the full test command above before claiming success. Distinguish automated tests from manual macOS-permission/browser checks.
 - Browser/app blocking, Apple Events permission, menu-bar rendering, and the global shortcut panel require manual verification on a real desktop session.
 
+## Data and statistics
+
+- Files: `settings.json`, `sessions.json`, `activeSession.json`, `captures.json`, `intentions.json`, `blockedAttempts.json`.
+- `StatsCalculator` is the single source for focus minutes/ratings. Never persist totals, streaks, or derived summaries.
+- Focus minutes are attributed to the session's start day. Only Hyperfocus contributes; early-ended sessions contribute actual elapsed time.
+- Blocked attempts store only bundle IDs or normalized hostnames plus browser/session/timestamp/detail. Never store full URLs, paths, queries, or page content.
+
+## Manual verification still required
+
+Automated tests cannot validate these; do not claim they passed without a real desktop check:
+- Menu-bar-only launch and popover layout.
+- Safari/Chrome Automation permission and active-tab redirect to `blocked.html`.
+- Real app hide / normal quit-request behavior.
+- Global `⌃⌥Space` panel focus and timing.
+- Notification permission/display.
+
 ## Product guardrails
 
 - Do not add streaks, leaderboards, achievements, guilt messaging, or gamification.
