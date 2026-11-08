@@ -10,7 +10,7 @@ options:
 packages:
   KeyboardShortcuts:
     url: https://github.com/sindresorhus/KeyboardShortcuts
-    from: 1.10.0
+    from: 1.17.0
 
 settings:
   base:

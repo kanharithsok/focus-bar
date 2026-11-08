@@ -128,7 +128,7 @@ struct StatsView: View {
                 HStack {
                     SectionLabel(text: "Blocked attempts")
                     Spacer()
-                    StatusPill(text: "Best effort", color: .green)
+                    StatusPill(text: "Best effort", color: .orange)
                 }
 
                 if app.blockedAttempts.attempts.isEmpty {

@@ -92,9 +92,15 @@ struct BlockingStatusView: View {
                     .font(.caption2)
             }
         case .unknown:
-            Text("Browser Automation permission hasn't been checked yet.")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Browser Automation permission hasn't been checked yet. Open Safari or Chrome, then check access.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Check permission") { app.blockingEngine.retryBrowserPermission() }
+                    .buttonStyle(.link)
+                    .font(.caption2)
+            }
         }
     }
 

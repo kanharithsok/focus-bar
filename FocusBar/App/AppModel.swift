@@ -108,8 +108,15 @@ final class AppModel {
         }
     }
 
-    func dismissStartupWarning() {
+    func dismissError() {
         startupWarning = nil
+        sessionManager.clearError()
+        blockingEngine.clearError()
+        blockedAttempts.clearError()
+        stats.clearError()
+        captures.clearError()
+        intentions.clearError()
+        settings.clearError()
     }
 
     var combinedError: String? {

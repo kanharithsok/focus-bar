@@ -96,6 +96,11 @@ struct SettingsView: View {
                         .font(.caption2)
                         .foregroundStyle(.orange)
                         .fixedSize(horizontal: false, vertical: true)
+                } else if app.blockingEngine.status.browserPermission == .unknown {
+                    Text("Open Safari or Chrome, then click Retry to trigger the macOS Automation prompt. FocusBar reads only the active tab's URL.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Divider()

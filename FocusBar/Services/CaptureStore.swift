@@ -59,6 +59,10 @@ final class CaptureStore {
         await persist()
     }
 
+    func clearError() {
+        lastError = nil
+    }
+
     private func persist() async {
         do {
             try await persistence.save(captures, to: "captures.json")

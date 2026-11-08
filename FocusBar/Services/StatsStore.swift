@@ -70,6 +70,10 @@ final class StatsStore {
         captureStore.captures(for: sessionID).count
     }
 
+    func clearError() {
+        lastError = nil
+    }
+
     private func persist() async {
         do {
             try await persistence.save(sessions, to: "sessions.json")

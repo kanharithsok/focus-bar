@@ -16,10 +16,14 @@ struct ReviewView: View {
     var body: some View {
         if let record {
             VStack(alignment: .leading, spacing: 14) {
-                Label(record.kind == .hyperfocus ? "Hyperfocus complete" : "Break complete",
-                      systemImage: "checkmark.circle.fill")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(record.kind == .hyperfocus ? .orange : .teal)
+                Label(
+                    record.status == .completed
+                        ? (record.kind == .hyperfocus ? "Hyperfocus complete" : "Break complete")
+                        : "Session ended",
+                    systemImage: record.status == .completed ? "checkmark.circle.fill" : "circle"
+                )
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(record.kind == .hyperfocus ? .orange : .teal)
 
                 Text(record.focusObject)
                     .font(.title3.weight(.semibold))

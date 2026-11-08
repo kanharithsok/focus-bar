@@ -9,6 +9,7 @@ struct IdleView: View {
     @State private var customMinutes = 45
     @State private var selectedIntentionID: UUID?
     @State private var selectedPresetID: UUID?
+    @State private var didInitializePreset = false
     @State private var scatterMode: ScatterfocusMode = .capture
     @State private var scatterMinutes = 10
     @State private var problemQuestion = ""
@@ -104,9 +105,9 @@ struct IdleView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .onAppear {
-            if selectedPresetID == nil {
-                selectedPresetID = app.settings.settings.selectedPresetID
-            }
+            guard !didInitializePreset else { return }
+            didInitializePreset = true
+            selectedPresetID = app.settings.settings.selectedPresetID
         }
     }
 

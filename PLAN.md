@@ -160,7 +160,7 @@ Design notes:
 ## 4. Key decisions and assumptions
 
 - **No Xcode project existed.** Generated one with XcodeGen; `project.yml` is authoritative.
-- **XcodeGen is a dev tool**, not a shipped dependency. The only app dependency is `KeyboardShortcuts` (1.10.0), as approved.
+- **XcodeGen is a dev tool**, not a shipped dependency. The only app dependency is `KeyboardShortcuts` (1.17.0), as approved.
 - **Deployment target 14.0**, Swift 5 language mode for predictable concurrency behavior with AppKit observers; app is Apple Silicon friendly (universal-capable, built arm64 here).
 - **No sandbox** for v1: Apple Events to Safari/Chrome and app-bundle inspection require it; app is distributed locally, not via App Store. No network entitlement/use.
 - **Absolute `endDate`** is the source of truth. `now` is refreshed on a 1 s tick, on wake, and on relaunch. Sleep does not extend sessions.

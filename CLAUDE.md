@@ -8,7 +8,7 @@ Native macOS 14+ menu-bar productivity app (`MenuBarExtra` with `.window` style,
 
 - `project.yml` is the source of truth. `FocusBar.xcodeproj` is generated with XcodeGen 2.46+.
 - **Never hand-edit `project.pbxproj`.** Add/remove files or settings in `project.yml`, then run `xcodegen generate`.
-- The only approved third-party dependency is `KeyboardShortcuts` (SPM, currently 1.10.x). Do not add others without explicit user approval.
+- The only approved third-party dependency is `KeyboardShortcuts` (SPM, currently 1.17.x). Do not add others without explicit user approval.
 - Deployment target: macOS 14.0. Swift 5 language mode.
 
 ## Commands

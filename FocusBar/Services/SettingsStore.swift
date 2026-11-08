@@ -83,6 +83,10 @@ final class SettingsStore {
         await save()
     }
 
+    func clearError() {
+        lastError = nil
+    }
+
     private func normalize(_ value: AppSettings) -> AppSettings {
         var normalized = value
         if normalized.presets.isEmpty {

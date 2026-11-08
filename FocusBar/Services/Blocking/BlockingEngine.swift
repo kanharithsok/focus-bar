@@ -78,7 +78,10 @@ final class BlockingEngine {
         currentSettings = nil
         currentPreset = nil
         websiteBlockerConfigured = false
-        status = Status()
+        status = Status(
+            browserPermission: browserBlocker.permission,
+            browserNames: SupportedBrowsers.all.map(\.displayName)
+        )
         lastError = nil
     }
 
@@ -92,6 +95,10 @@ final class BlockingEngine {
     func retryBrowserPermission() {
         browserBlocker.retryPermissionCheck()
         status.browserPermission = browserBlocker.permission
+    }
+
+    func clearError() {
+        lastError = nil
     }
 
     private func applyConfiguration() {

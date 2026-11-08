@@ -66,6 +66,10 @@ final class IntentionStore {
         skippedDays.contains(calendar.startOfDay(for: day))
     }
 
+    func clearError() {
+        lastError = nil
+    }
+
     private func persist() async {
         do {
             let file = IntentionFile(

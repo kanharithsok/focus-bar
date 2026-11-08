@@ -18,6 +18,10 @@ final class AppBlocker: Blocker {
         guard !configuration.appBundleIDs.isEmpty else { return }
 
         self.configuration = configuration
+        // Quit requests are more disruptive than hiding, so retry them less often.
+        dedup = BlockedAttemptDeduplicator(
+            cooldown: configuration.appAction == .requestTerminate ? 30 : 8
+        )
         let center = NSWorkspace.shared.notificationCenter
         let names = [
             NSWorkspace.didLaunchApplicationNotification,

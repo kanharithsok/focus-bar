@@ -56,7 +56,44 @@ final class BrowserBlocker: Blocker {
 
     func retryPermissionCheck() {
         updatePermission(.unknown)
-        handleActivation()
+
+        if let browser = runningSupportedBrowser() {
+            // An explicit probe can show the macOS Automation prompt even when
+            // the browser isn't frontmost. Give the user time to respond.
+            Task { [weak self] in
+                await self?.probePermission(for: browser)
+            }
+        } else {
+            handleActivation()
+        }
+    }
+
+    private func runningSupportedBrowser() -> BrowserDefinition? {
+        SupportedBrowsers.all.first { browser in
+            NSWorkspace.shared.runningApplications.contains {
+                $0.bundleIdentifier == browser.bundleID
+            }
+        }
+    }
+
+    private func probePermission(for browser: BrowserDefinition) async {
+        let result = await runner.run(script: browser.urlScript, timeout: 30)
+
+        switch result {
+        case .success:
+            updatePermission(.granted)
+        case .failure(.permissionDenied):
+            updatePermission(.denied)
+        case .failure(.timedOut):
+            updatePermission(.timedOut)
+        case .failure:
+            updatePermission(.unknown)
+        }
+
+        if isRunning,
+           NSWorkspace.shared.frontmostApplication?.bundleIdentifier == browser.bundleID {
+            startPolling()
+        }
     }
 
     private func handleActivation() {
@@ -99,6 +136,9 @@ final class BrowserBlocker: Blocker {
         defer { isChecking = false }
 
         let result = await runner.run(script: browser.urlScript, timeout: 2.5)
+
+        // The session may have ended while the Apple Event was in flight.
+        guard isRunning else { return }
 
         switch result {
         case .success(let output):

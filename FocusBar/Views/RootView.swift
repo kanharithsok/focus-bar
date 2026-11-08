@@ -10,7 +10,7 @@ struct RootView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     if let error = app.combinedError {
-                        ErrorBanner(message: error, onDismiss: app.dismissStartupWarning)
+                        ErrorBanner(message: error, onDismiss: app.dismissError)
                     }
 
                     switch app.sessionManager.phase {

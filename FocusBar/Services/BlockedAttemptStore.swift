@@ -47,6 +47,10 @@ final class BlockedAttemptStore {
         count(in: StatsCalculator.weekInterval(containing: now, calendar: calendar))
     }
 
+    func clearError() {
+        lastError = nil
+    }
+
     private func persist() async {
         do {
             try await persistence.save(attempts, to: "blockedAttempts.json")
