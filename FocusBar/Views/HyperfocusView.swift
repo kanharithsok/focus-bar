@@ -99,7 +99,7 @@ struct HyperfocusView: View {
                     .foregroundStyle(.tertiary)
             }
             .sheet(isPresented: $showEarlyEnd) {
-                EarlyEndView()
+                EarlyEndView(delaySeconds: app.settings.settings.earlyEndDelaySeconds)
                     .environment(app)
             }
         } else {

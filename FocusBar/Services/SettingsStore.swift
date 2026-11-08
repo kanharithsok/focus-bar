@@ -89,6 +89,9 @@ final class SettingsStore {
 
     private func normalize(_ value: AppSettings) -> AppSettings {
         var normalized = value
+        if !AppSettings.earlyEndDelayOptions.contains(normalized.earlyEndDelaySeconds) {
+            normalized.earlyEndDelaySeconds = 0
+        }
         if normalized.presets.isEmpty {
             let preset = BlocklistPreset.socialMediaDefault()
             normalized.presets = [preset]

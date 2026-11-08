@@ -20,7 +20,7 @@ FocusBar is local-first. There are no accounts, analytics, telemetry, cloud sync
 - Hyperfocus sessions: 25, 50, 90 minutes, or a custom duration; one specific focus object; optional daily-intention link.
 - Absolute end-date timer: sleep, wake, and relaunch are handled by recomputing from the saved end time.
 - Explicit session state machine with invalid-transition rejection.
-- Early end: 20-second confirmation countdown plus a required one-line reason.
+- Early end: a required one-line reason, plus an optional configurable pause (default: none) before the session can be ended.
 - Optional **Commit Mode**: hides the normal early-end action; an emergency stop remains available and is recorded as an emergency stop. FocusBar never claims it can prevent force quitting or restarting macOS.
 - Session review: optional 1–5 focus-quality rating, optional note, and review of captured distractions.
 - Daily intentions: up to three per day, optional, skippable, and linkable to a Hyperfocus session.
@@ -69,7 +69,8 @@ The focus object and remaining time stay visible in the popover, and the menu ba
 
 ### Ending early / Commit Mode
 
-- Default: **End early…** opens a 20-second countdown and requires a one-line reason.
+- Default: **End early…** asks for a one-line reason, then ends immediately.
+- **Settings → Session → Early-end delay** can add an optional 5–30 second pause before **End Session** unlocks.
 - Commit Mode: the normal early-end button is hidden. **Emergency stop…** is still available from the session view and the app's **Session** menu. It is recorded as an emergency stop.
 - FocusBar cannot stop you from force quitting the app or restarting the Mac.
 

@@ -24,6 +24,8 @@ enum AppBlockingAction: String, Codable, CaseIterable, Identifiable, Sendable {
 }
 
 struct AppSettings: Codable, Equatable, Sendable {
+    static let earlyEndDelayOptions = [0, 5, 10, 15, 20, 30]
+
     var commitMode: Bool
     var blockApps: Bool
     var blockWebsites: Bool
@@ -32,6 +34,7 @@ struct AppSettings: Codable, Equatable, Sendable {
     var presets: [BlocklistPreset]
     var selectedPresetID: UUID?
     var notificationsEnabled: Bool
+    var earlyEndDelaySeconds: Int
 
     init(
         commitMode: Bool,
@@ -41,7 +44,8 @@ struct AppSettings: Codable, Equatable, Sendable {
         appBlockingAction: AppBlockingAction,
         presets: [BlocklistPreset],
         selectedPresetID: UUID?,
-        notificationsEnabled: Bool
+        notificationsEnabled: Bool,
+        earlyEndDelaySeconds: Int
     ) {
         self.commitMode = commitMode
         self.blockApps = blockApps
@@ -51,6 +55,7 @@ struct AppSettings: Codable, Equatable, Sendable {
         self.presets = presets
         self.selectedPresetID = selectedPresetID
         self.notificationsEnabled = notificationsEnabled
+        self.earlyEndDelaySeconds = earlyEndDelaySeconds
     }
 
     static func defaults() -> AppSettings {
@@ -63,7 +68,8 @@ struct AppSettings: Codable, Equatable, Sendable {
             appBlockingAction: .hide,
             presets: [preset],
             selectedPresetID: preset.id,
-            notificationsEnabled: true
+            notificationsEnabled: true,
+            earlyEndDelaySeconds: 0
         )
     }
 
@@ -76,6 +82,7 @@ struct AppSettings: Codable, Equatable, Sendable {
         case presets
         case selectedPresetID
         case notificationsEnabled
+        case earlyEndDelaySeconds
     }
 
     init(from decoder: Decoder) throws {
@@ -89,6 +96,7 @@ struct AppSettings: Codable, Equatable, Sendable {
         appBlockingAction = try container.decodeIfPresent(AppBlockingAction.self, forKey: .appBlockingAction) ?? fallback.appBlockingAction
         presets = try container.decodeIfPresent([BlocklistPreset].self, forKey: .presets) ?? fallback.presets
         notificationsEnabled = try container.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? fallback.notificationsEnabled
+        earlyEndDelaySeconds = try container.decodeIfPresent(Int.self, forKey: .earlyEndDelaySeconds) ?? fallback.earlyEndDelaySeconds
 
         if let storedID = try container.decodeIfPresent(UUID.self, forKey: .selectedPresetID),
            presets.contains(where: { $0.id == storedID }) {

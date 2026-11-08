@@ -79,7 +79,7 @@ Acceptance:
 
 Status: **implemented, verified by build + unit tests**
 
-- 20-second early-end countdown + required reason.
+- Configurable early-end delay (default: none) + required reason.
 - Commit Mode hides normal early end; emergency stop remains available and is labelled honestly.
 - Completion review: 1–5 focus rating, optional note, captured-distraction review.
 - Daily intentions (max 3, optional, skip for today), optional session link.
@@ -198,7 +198,7 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBar \
 | Date | Check | Result |
 | --- | --- | --- |
 | 2026-11-09 | `xcodebuild ... build` (Debug, macOS) | **BUILD SUCCEEDED** |
-| 2026-11-09 | `xcodebuild ... test` (macOS) | **63 tests, 0 failures** |
+| 2026-11-09 | `xcodebuild ... test` (macOS) | **65 tests, 0 failures** |
 | 2026-11-09 | Built `Info.plist` | `LSUIElement = true`, `NSAppleEventsUsageDescription` present |
 | 2026-11-09 | Built resources | `blocked.html` present in app bundle |
 | 2026-11-09 | `AppleScriptRunner` tests | success, timeout, permission (-1743), execution error all mapped correctly |

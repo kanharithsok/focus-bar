@@ -211,6 +211,13 @@ final class AppSettingsDecodingTests: XCTestCase {
         XCTAssertEqual(settings.presets.count, 1)
         XCTAssertEqual(settings.selectedPresetID, settings.presets.first?.id)
         XCTAssertTrue(settings.notificationsEnabled)
+        XCTAssertEqual(settings.earlyEndDelaySeconds, 0)
+    }
+
+    func testEarlyEndDelayDecodesStoredValue() throws {
+        let json = #"{"earlyEndDelaySeconds":20}"#
+        let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
+        XCTAssertEqual(settings.earlyEndDelaySeconds, 20)
     }
 
     func testUnknownSelectedPresetFallsBackToFirst() throws {
@@ -231,5 +238,23 @@ final class AppSettingsDecodingTests: XCTestCase {
         """
         let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
         XCTAssertEqual(settings.selectedPresetID?.uuidString, "11111111-1111-1111-1111-111111111111")
+    }
+}
+
+@MainActor
+final class SettingsStoreTests: XCTestCase {
+    func testEarlyEndDelayNormalizesToSupportedOptions() async {
+        let env = TestEnvironment()
+        await env.settings.load()
+        defer { env.cleanup() }
+
+        await env.settings.update { $0.earlyEndDelaySeconds = 20 }
+        XCTAssertEqual(env.settings.settings.earlyEndDelaySeconds, 20)
+
+        await env.settings.update { $0.earlyEndDelaySeconds = 7 }
+        XCTAssertEqual(env.settings.settings.earlyEndDelaySeconds, 0)
+
+        await env.settings.update { $0.earlyEndDelaySeconds = -5 }
+        XCTAssertEqual(env.settings.settings.earlyEndDelaySeconds, 0)
     }
 }

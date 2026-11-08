@@ -46,6 +46,25 @@ struct SettingsView: View {
 
                 Divider()
 
+                HStack {
+                    Text("Early-end delay")
+                    Spacer()
+                    Picker("Early-end delay", selection: settingBinding(\.earlyEndDelaySeconds)) {
+                        ForEach(AppSettings.earlyEndDelayOptions, id: \.self) { seconds in
+                            Text(seconds == 0 ? "None" : "\(seconds) seconds").tag(seconds)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .fixedSize()
+                }
+                Text("Optional pause before End Session unlocks after you enter a reason. Default is none.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Divider()
+
                 Toggle("Session notifications", isOn: settingBinding(\.notificationsEnabled))
                 Text("Requests notification permission the first time a session starts. Blocking still works if notifications are denied.")
                     .font(.caption2)

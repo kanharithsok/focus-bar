@@ -5,9 +5,13 @@ struct EarlyEndView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var reason = ""
-    @State private var secondsRemaining = 20
+    @State private var secondsRemaining: Int
     @State private var isEnding = false
     @State private var errorMessage: String?
+
+    init(delaySeconds: Int) {
+        _secondsRemaining = State(initialValue: max(0, delaySeconds))
+    }
 
     private var trimmedReason: String {
         reason.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -15,6 +19,34 @@ struct EarlyEndView: View {
 
     private var canEnd: Bool {
         secondsRemaining == 0 && !trimmedReason.isEmpty && !isEnding
+    }
+
+    private var endButtonTitle: String {
+        if isEnding { return "Ending…" }
+        if secondsRemaining > 0 { return "End in \(secondsRemaining)s" }
+        return "End Session"
+    }
+
+    private var statusText: String {
+        if secondsRemaining > 0 {
+            return "You can end the session in \(secondsRemaining)s."
+        }
+        if trimmedReason.isEmpty {
+            return "Enter a one-line reason to end the session."
+        }
+        return "You can end the session now."
+    }
+
+    private var statusIcon: String {
+        if secondsRemaining > 0 { return "hourglass" }
+        if trimmedReason.isEmpty { return "pencil.line" }
+        return "checkmark.circle"
+    }
+
+    private var statusColor: Color {
+        if secondsRemaining > 0 { return .orange }
+        if trimmedReason.isEmpty { return .secondary }
+        return .green
     }
 
     var body: some View {
@@ -49,13 +81,12 @@ struct EarlyEndView: View {
             }
 
             HStack(spacing: 8) {
-                Image(systemName: secondsRemaining > 0 ? "hourglass" : "checkmark.circle")
-                    .foregroundStyle(secondsRemaining > 0 ? Color.secondary : Color.green)
-                Text(secondsRemaining > 0
-                     ? "You can end the session in \(secondsRemaining)s."
-                     : "You can end the session now.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Image(systemName: statusIcon)
+                    .foregroundStyle(statusColor)
+                Text(statusText)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(statusColor)
+                    .monospacedDigit()
                 Spacer()
             }
 
@@ -69,9 +100,14 @@ struct EarlyEndView: View {
                 Button("Keep focusing") { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Spacer()
-                Button(isEnding ? "Ending…" : "End Session") { end() }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!canEnd)
+                Button {
+                    end()
+                } label: {
+                    Text(endButtonTitle)
+                        .monospacedDigit()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(!canEnd)
             }
 
             Text("Ending early is saved as an early end. No guilt attached.")
