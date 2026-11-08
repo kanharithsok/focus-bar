@@ -47,6 +47,7 @@
 		A935EFB763B8A5E32EEA14A7 /* HostnameMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 006F9D82B0D42843CEDF49DB /* HostnameMatcherTests.swift */; };
 		AE7125E37A919AC89A672ECA /* BlocklistEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34C196FDB6EF7B63F009F1B /* BlocklistEditorView.swift */; };
 		B142777D5F3628EE007ED93A /* HostnameMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8E8F59C4AB1D82B9B147D43 /* HostnameMatcher.swift */; };
+		B1755631D7C3D5864E5494D6 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 29A8FAB5B1C171A525A408CF /* AppIcon.icon */; };
 		B98A14FA4999E0CADA682228 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1619CB0754EE465F701C8290 /* SessionManager.swift */; };
 		BDFB5414513C74DBDA4627BF /* CaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6976686C569F4FF2CE2CB48E /* CaptureStore.swift */; };
 		BF4A1A90CA3831183C93E264 /* BlockingStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4D2C7570A7EC8E144E2CBA8 /* BlockingStatusView.swift */; };
@@ -83,6 +84,7 @@
 		1AFE157BD3862EB22834C634 /* GlobalShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalShortcut.swift; sourceTree = "<group>"; };
 		239EBA8FE54AFDA3F808EF63 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		294505A8DD46602C38CA1964 /* BlockingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockingTests.swift; sourceTree = "<group>"; };
+		29A8FAB5B1C171A525A408CF /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		2AFF5B062F02CF1CF76E095E /* FocusBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusBarApp.swift; sourceTree = "<group>"; };
 		2B9891CB993AEFA460CFB1BF /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		2C7EF54F6E995189C7499FAA /* AppleScriptRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleScriptRunner.swift; sourceTree = "<group>"; };
@@ -146,6 +148,7 @@
 		1AE71F28B475057CDE2D4F7B /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				29A8FAB5B1C171A525A408CF /* AppIcon.icon */,
 				5B4DCA6420CD7B85E124ECF3 /* blocked.html */,
 			);
 			path = Resources;
@@ -364,6 +367,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B1755631D7C3D5864E5494D6 /* AppIcon.icon in Resources */,
 				763083639980EA63587C0741 /* blocked.html in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -597,7 +601,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.kanharithsok.FocusBar;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kanharithsok.FocusBar.debug;
 				PRODUCT_NAME = FocusBar;
 				SDKROOT = macosx;
 			};
