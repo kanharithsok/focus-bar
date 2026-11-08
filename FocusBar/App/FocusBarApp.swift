@@ -22,5 +22,10 @@ struct FocusBarApp: App {
                 .disabled(model.sessionManager.activeSession == nil)
             }
         }
+
+        Settings {
+            SettingsView()
+                .environment(model)
+        }
     }
 }

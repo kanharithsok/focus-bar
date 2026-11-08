@@ -83,6 +83,8 @@ struct ScatterfocusView: View {
 
                 breakBlockingCard
 
+                BlockingStatusView()
+
                 HStack {
                     Button("End break") {
                         Task { await app.sessionManager.endScatterfocusEarly() }

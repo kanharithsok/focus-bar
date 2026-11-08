@@ -1,0 +1,254 @@
+import SwiftUI
+import AppKit
+import KeyboardShortcuts
+
+struct SettingsView: View {
+    @Environment(AppModel.self) private var app
+
+    @State private var editingPreset: BlocklistPreset?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("FocusBar Settings")
+                        .font(.title2.weight(.semibold))
+                    Text("Local-first attention management")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                sessionSection
+                blockingSection
+                presetsSection
+                shortcutSection
+                privacySection
+                aboutSection
+            }
+            .padding(20)
+        }
+        .frame(width: 580, height: 660)
+        .sheet(item: $editingPreset) { preset in
+            BlocklistEditorView(preset: preset)
+                .environment(app)
+        }
+    }
+
+    private var sessionSection: some View {
+        SettingsSection(title: "Session") {
+            VStack(alignment: .leading, spacing: 9) {
+                Toggle("Commit mode", isOn: settingBinding(\.commitMode))
+                Text("Hides the normal early-end action. An emergency stop remains available and is recorded as an emergency stop. FocusBar cannot prevent force quitting or restarting macOS.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Divider()
+
+                Toggle("Session notifications", isOn: settingBinding(\.notificationsEnabled))
+                Text("Requests notification permission the first time a session starts. Blocking still works if notifications are denied.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var blockingSection: some View {
+        SettingsSection(title: "Blocking") {
+            VStack(alignment: .leading, spacing: 10) {
+                Toggle("Block selected applications", isOn: settingBinding(\.blockApps))
+                Picker("When a blocked app activates", selection: settingBinding(\.appBlockingAction)) {
+                    ForEach(AppBlockingAction.allCases) { action in
+                        Text(action.displayName).tag(action)
+                    }
+                }
+                .pickerStyle(.menu)
+                Text(app.settings.settings.appBlockingAction.explanation)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Divider()
+
+                Toggle("Guard active Safari and Chrome tabs", isOn: settingBinding(\.blockWebsites))
+                Text("Best effort: only the active tab is inspected, about once per second while a supported browser is foreground. Background tabs, fast navigations, and permission failures can be missed.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 8) {
+                    Text("Automation permission")
+                        .font(.caption)
+                    StatusPill(
+                        text: app.blockingEngine.status.browserPermission.displayName,
+                        color: permissionColor
+                    )
+                    Spacer()
+                    Button("Open Settings") { app.openAutomationSettings() }
+                        .font(.caption)
+                    Button("Retry") { app.blockingEngine.retryBrowserPermission() }
+                        .font(.caption)
+                }
+
+                if app.blockingEngine.status.browserPermission == .denied {
+                    Text("Enable FocusBar under Privacy & Security > Automation. FocusBar asks only when browser protection needs to inspect a tab.")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Divider()
+
+                Toggle("Keep blocking during Scatterfocus breaks", isOn: settingBinding(\.blockDuringScatterfocus))
+                Text("On by default so a break doesn't become a scrolling session. You can still suspend blocking for an individual break.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("FocusBar never force-quits apps, never closes browser tabs, and never claims guaranteed blocking.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var presetsSection: some View {
+        SettingsSection(title: "Blocklist presets") {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(app.settings.settings.presets) { preset in
+                    HStack(spacing: 8) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(preset.name)
+                                .font(.callout.weight(.medium))
+                            Text("\(preset.normalizedWebsiteDomains.count) sites · \(preset.apps.count) apps")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Edit") {
+                            editingPreset = preset
+                        }
+                        .font(.caption)
+                        if !preset.isBuiltIn {
+                            Button {
+                                Task { await app.settings.deletePreset(id: preset.id) }
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("Delete \(preset.name)")
+                        }
+                    }
+                    if preset.id != app.settings.settings.presets.last?.id {
+                        Divider()
+                    }
+                }
+
+                Button("Add preset") {
+                    Task {
+                        let preset = await app.settings.addPreset()
+                        editingPreset = preset
+                    }
+                }
+                .font(.caption)
+
+                Text("The default preset includes the social services in the brief. YouTube is included but disabled by default.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var shortcutSection: some View {
+        SettingsSection(title: "Global shortcut") {
+            VStack(alignment: .leading, spacing: 8) {
+                KeyboardShortcuts.Recorder("Park a distraction:", name: .captureDistraction)
+                Text("Default is ⌃⌥Space. The capture panel opens instantly and saves one line locally. No screen-recording or accessibility permission is used.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var privacySection: some View {
+        SettingsSection(title: "Privacy and data") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Everything stays on this Mac. There are no accounts, analytics, telemetry, cloud sync, or network calls.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 6) {
+                    Image(systemName: "folder")
+                        .foregroundStyle(.secondary)
+                    Text(app.dataDirectory.path)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer()
+                    Button("Reveal") {
+                        NSWorkspace.shared.open(app.dataDirectory)
+                    }
+                    .font(.caption)
+                }
+            }
+        }
+    }
+
+    private var aboutSection: some View {
+        SettingsSection(title: "About v1") {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("FocusBar 1.0 · macOS 14+")
+                    .font(.caption)
+                Text("Hyperfocus and Scatterfocus are attention tools, not enforcement software. App blocking is in-process and stops if FocusBar is force-quit. Browser protection is an active-tab guard for Safari and Chrome. System-wide hosts-file blocking is not part of v1.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var permissionColor: Color {
+        switch app.blockingEngine.status.browserPermission {
+        case .granted: return .green
+        case .denied, .timedOut: return .orange
+        case .unknown: return .secondary
+        }
+    }
+
+    private func settingBinding<T>(_ keyPath: WritableKeyPath<AppSettings, T>) -> Binding<T> {
+        Binding(
+            get: { app.settings.settings[keyPath: keyPath] },
+            set: { newValue in
+                Task {
+                    await app.settings.update { $0[keyPath: keyPath] = newValue }
+                }
+            }
+        )
+    }
+}
+
+private struct SettingsSection<Content: View>: View {
+    let title: String
+    let content: Content
+
+    init(title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            SectionLabel(text: title)
+            Card {
+                content
+            }
+        }
+    }
+}

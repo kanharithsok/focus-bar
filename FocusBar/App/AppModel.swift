@@ -11,8 +11,11 @@ final class AppModel {
     let stats: StatsStore
     let captures: CaptureStore
     let intentions: IntentionStore
+    let blockedAttempts: BlockedAttemptStore
     let sessionManager: SessionManager
+    let blockingEngine: BlockingEngine
     let capturePanel: CapturePanelController
+    let notifications: NotificationService
 
     private(set) var startupWarning: String?
     private(set) var hasStarted = false
@@ -25,10 +28,16 @@ final class AppModel {
         let stats = StatsStore(persistence: persistence)
         let captures = CaptureStore(persistence: persistence)
         let intentions = IntentionStore(persistence: persistence)
+        let blockedAttempts = BlockedAttemptStore(persistence: persistence)
+        let notifications = NotificationService()
         let sessionManager = SessionManager(
             persistence: persistence,
             statsStore: stats,
             settingsStore: settings
+        )
+        let blockingEngine = BlockingEngine(
+            attemptStore: blockedAttempts,
+            notifications: notifications
         )
 
         self.persistence = persistence
@@ -36,8 +45,21 @@ final class AppModel {
         self.stats = stats
         self.captures = captures
         self.intentions = intentions
+        self.blockedAttempts = blockedAttempts
         self.sessionManager = sessionManager
+        self.blockingEngine = blockingEngine
         self.capturePanel = CapturePanelController()
+        self.notifications = notifications
+
+        sessionManager.onSessionStarted = { [weak self] session in
+            self?.beginBlocking(for: session)
+        }
+        sessionManager.onSessionEnded = { [weak self] record in
+            self?.endBlocking(record: record)
+        }
+        sessionManager.onBlockingSuspensionChanged = { [weak self] suspended in
+            self?.blockingEngine.setSuspended(suspended)
+        }
 
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification,
@@ -58,6 +80,7 @@ final class AppModel {
         await stats.load()
         await captures.load()
         await intentions.load()
+        await blockedAttempts.load()
         await sessionManager.restore()
 
         let issues = await persistence.consumeLoadIssues()
@@ -92,10 +115,46 @@ final class AppModel {
     var combinedError: String? {
         startupWarning
             ?? sessionManager.lastError
+            ?? blockingEngine.lastError
+            ?? blockedAttempts.lastError
             ?? stats.lastError
             ?? captures.lastError
             ?? intentions.lastError
             ?? settings.lastError
+    }
+
+    var dataDirectory: URL {
+        persistence.directory
+    }
+
+    func openAutomationSettings() {
+        guard let url = URL(
+            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"
+        ) else {
+            return
+        }
+        NSWorkspace.shared.open(url)
+    }
+
+    private func beginBlocking(for session: ActiveSession) {
+        notifications.requestAuthorizationIfNeeded(enabled: settings.settings.notificationsEnabled)
+        blockingEngine.start(
+            session: session,
+            preset: settings.preset(id: session.blocklistPresetID),
+            settings: settings.settings
+        )
+    }
+
+    private func endBlocking(record: SessionRecord) {
+        blockingEngine.stop()
+
+        guard settings.settings.notificationsEnabled else { return }
+        let title = record.kind == .hyperfocus ? "Hyperfocus ended" : "Break ended"
+        let minutes = SessionTimer.roundedMinutes(record.actualDuration)
+        notifications.notify(
+            title: title,
+            body: "\(record.focusObject) · \(minutes) min · \(record.status.displayName)"
+        )
     }
 
     /// Emergency escape. Requires confirmation but bypasses Commit Mode's normal

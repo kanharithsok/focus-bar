@@ -59,6 +59,8 @@ struct HyperfocusView: View {
                     .foregroundStyle(.secondary)
                 }
 
+                BlockingStatusView()
+
                 Divider()
 
                 if commitMode {

@@ -41,6 +41,12 @@ struct RootView: View {
                 .buttonStyle(.plain)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                SettingsLink {
+                    Text("Settings")
+                }
+                .buttonStyle(.plain)
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 Button("Quit") {
                     NSApp.terminate(nil)
                 }
