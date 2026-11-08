@@ -3,6 +3,8 @@ import SwiftUI
 struct RootView: View {
     @Environment(AppModel.self) private var app
 
+    @State private var showHistory = false
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
@@ -28,11 +30,17 @@ struct RootView: View {
 
             Divider()
 
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 Text("Local-only")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                 Spacer()
+                Button("History") {
+                    showHistory = true
+                }
+                .buttonStyle(.plain)
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 Button("Quit") {
                     NSApp.terminate(nil)
                 }
@@ -44,5 +52,9 @@ struct RootView: View {
             .padding(.vertical, 9)
         }
         .frame(width: 380)
+        .sheet(isPresented: $showHistory) {
+            StatsView()
+                .environment(app)
+        }
     }
 }

@@ -8,6 +8,8 @@ final class AppModel {
     let persistence: PersistenceController
     let settings: SettingsStore
     let stats: StatsStore
+    let captures: CaptureStore
+    let intentions: IntentionStore
     let sessionManager: SessionManager
 
     private(set) var startupWarning: String?
@@ -19,6 +21,8 @@ final class AppModel {
         let persistence = PersistenceController()
         let settings = SettingsStore(persistence: persistence)
         let stats = StatsStore(persistence: persistence)
+        let captures = CaptureStore(persistence: persistence)
+        let intentions = IntentionStore(persistence: persistence)
         let sessionManager = SessionManager(
             persistence: persistence,
             statsStore: stats,
@@ -28,6 +32,8 @@ final class AppModel {
         self.persistence = persistence
         self.settings = settings
         self.stats = stats
+        self.captures = captures
+        self.intentions = intentions
         self.sessionManager = sessionManager
 
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -47,6 +53,8 @@ final class AppModel {
 
         await settings.load()
         await stats.load()
+        await captures.load()
+        await intentions.load()
         await sessionManager.restore()
 
         let issues = await persistence.consumeLoadIssues()
@@ -58,7 +66,38 @@ final class AppModel {
     }
 
     var combinedError: String? {
-        startupWarning ?? sessionManager.lastError ?? stats.lastError ?? settings.lastError
+        startupWarning
+            ?? sessionManager.lastError
+            ?? stats.lastError
+            ?? captures.lastError
+            ?? intentions.lastError
+            ?? settings.lastError
+    }
+
+    /// Emergency escape. Requires confirmation but bypasses Commit Mode's normal
+    /// early-end path. FocusBar cannot prevent force quitting or restarting macOS.
+    func emergencyStop() async {
+        guard let session = sessionManager.activeSession else { return }
+
+        let alert = NSAlert()
+        alert.messageText = "End this session immediately?"
+        alert.informativeText = """
+        "\(session.focusObject)" will be recorded as an emergency stop.
+
+        FocusBar cannot prevent you from force quitting the app or restarting your Mac.
+        """
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "End Session")
+        alert.addButton(withTitle: "Cancel")
+
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+        do {
+            try await sessionManager.endEarly(reason: "Emergency stop", emergency: true)
+        } catch {
+            sessionManager.noteError(error.localizedDescription)
+        }
     }
 
     deinit {

@@ -14,5 +14,13 @@ struct FocusBarApp: App {
             MenuBarLabel(sessionManager: model.sessionManager)
         }
         .menuBarExtraStyle(.window)
+        .commands {
+            CommandMenu("Session") {
+                Button("Emergency Stop…") {
+                    Task { await model.emergencyStop() }
+                }
+                .disabled(model.sessionManager.activeSession == nil)
+            }
+        }
     }
 }

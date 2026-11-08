@@ -283,6 +283,55 @@ final class SessionManagerTests: XCTestCase {
         XCTAssertEqual(env.manager.pendingReview?.scatterfocusMode, .habitual)
     }
 
+    func testIntentionIsLinkedToSessionAndRecord() async throws {
+        let env = TestEnvironment()
+        await env.loadAll()
+        defer { env.cleanup() }
+
+        let intention = try await env.intentions.add(text: "Finish the outline", on: env.clock.now)
+        try await env.manager.startHyperfocus(
+            focusObject: "Write section one",
+            minutes: 50,
+            intention: intention
+        )
+
+        XCTAssertEqual(env.manager.activeSession?.intentionID, intention.id)
+        XCTAssertEqual(env.manager.activeSession?.intentionText, "Finish the outline")
+
+        env.clock.now = env.clock.now.addingTimeInterval(50 * 60)
+        await env.manager.refresh()
+        try await env.manager.submitReview(rating: 4, note: nil)
+
+        XCTAssertEqual(env.stats.sessions.first?.intentionID, intention.id)
+        XCTAssertEqual(env.stats.sessions.first?.intentionText, "Finish the outline")
+    }
+
+    func testPendingReviewSurvivesRelaunch() async throws {
+        let env = TestEnvironment()
+        await env.loadAll()
+        defer { env.cleanup() }
+
+        try await env.manager.startHyperfocus(focusObject: "Review me", minutes: 25)
+        env.clock.now = env.clock.now.addingTimeInterval(25 * 60)
+        await env.manager.refresh()
+        XCTAssertEqual(env.manager.phase, .review)
+
+        let restored = SessionManager(
+            persistence: env.persistence,
+            statsStore: env.stats,
+            settingsStore: env.settings,
+            dateProvider: { env.clock.now },
+            automaticallyTicks: false
+        )
+        await restored.restore()
+        XCTAssertEqual(restored.phase, .review)
+        XCTAssertEqual(restored.pendingReview?.focusObject, "Review me")
+
+        try await restored.submitReview(rating: 3, note: "Resumed review")
+        XCTAssertEqual(env.stats.sessions.first?.rating, 3)
+        XCTAssertEqual(env.stats.sessions.first?.note, "Resumed review")
+    }
+
     func testSaveAndStartBreakAfterReview() async throws {
         let env = TestEnvironment()
         await env.loadAll()

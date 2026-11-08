@@ -6,8 +6,13 @@ struct IdleView: View {
     @State private var focusObject = ""
     @State private var durationChoice: DurationChoice = .twentyFive
     @State private var customMinutes = 45
+    @State private var selectedIntentionID: UUID?
     @State private var isStarting = false
     @State private var errorMessage: String?
+
+    private var todayIntentions: [DailyIntention] {
+        app.intentions.intentions(on: Date())
+    }
 
     private enum DurationChoice: Int, CaseIterable, Identifiable {
         case twentyFive = 25
@@ -79,6 +84,20 @@ struct IdleView: View {
                         }
                     }
 
+                    if !todayIntentions.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            SectionLabel(text: "Link to an intention")
+                            Picker("Intention", selection: $selectedIntentionID) {
+                                Text("None").tag(UUID?.none)
+                                ForEach(todayIntentions) { intention in
+                                    Text(intention.text).tag(Optional(intention.id))
+                                }
+                            }
+                            .labelsHidden()
+                            .pickerStyle(.menu)
+                        }
+                    }
+
                     Button(action: startIfPossible) {
                         HStack {
                             Spacer()
@@ -104,6 +123,8 @@ struct IdleView: View {
                 }
             }
 
+            IntentionsCard()
+
             Text("FocusBar keeps your session on this Mac. Nothing is uploaded.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
@@ -116,15 +137,19 @@ struct IdleView: View {
         isStarting = true
         errorMessage = nil
 
+        let intention = todayIntentions.first { $0.id == selectedIntentionID }
+
         Task {
             defer { isStarting = false }
             do {
                 try await app.sessionManager.startHyperfocus(
                     focusObject: focusObject,
                     minutes: minutes,
+                    intention: intention,
                     preset: app.settings.selectedPreset
                 )
                 focusObject = ""
+                selectedIntentionID = nil
             } catch {
                 errorMessage = error.localizedDescription
             }

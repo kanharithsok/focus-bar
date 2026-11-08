@@ -3,8 +3,14 @@ import SwiftUI
 struct HyperfocusView: View {
     @Environment(AppModel.self) private var app
 
+    @State private var showEarlyEnd = false
+
     private var session: ActiveSession? {
         app.sessionManager.activeSession
+    }
+
+    private var commitMode: Bool {
+        app.settings.settings.commitMode
     }
 
     var body: some View {
@@ -19,6 +25,7 @@ struct HyperfocusView: View {
                         .font(.system(size: 32, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(.primary)
+                        .accessibilityLabel("\(app.sessionManager.remainingText) remaining")
                 }
 
                 Text(session.focusObject)
@@ -51,6 +58,47 @@ struct HyperfocusView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }
+
+                Divider()
+
+                if commitMode {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Commit mode is on", systemImage: "lock.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.orange)
+                        Text("The normal early-end action is hidden. An emergency stop remains available and is recorded as an emergency stop.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button("Emergency stop…") {
+                            Task { await app.emergencyStop() }
+                        }
+                        .buttonStyle(.link)
+                        .font(.caption)
+                    }
+                } else {
+                    HStack {
+                        Button("End early…") {
+                            showEarlyEnd = true
+                        }
+                        .buttonStyle(.bordered)
+                        Spacer()
+                        Button("Emergency stop…") {
+                            Task { await app.emergencyStop() }
+                        }
+                        .buttonStyle(.link)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+                }
+
+                Text("FocusBar cannot prevent force quitting or restarting your Mac.")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .sheet(isPresented: $showEarlyEnd) {
+                EarlyEndView()
+                    .environment(app)
             }
         } else {
             Text("No active session")
