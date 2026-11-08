@@ -78,3 +78,42 @@ struct StatusPill: View {
             .foregroundStyle(color)
     }
 }
+
+/// A solid, darkened accent button that fits the dark menu-bar popover.
+/// System prominent buttons render pastel fills on macOS, which wash out
+/// against the app's dark surfaces.
+struct AccentButtonStyle: ButtonStyle {
+    let fill: Color
+
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.semibold))
+            .foregroundStyle(isEnabled ? Color.white : Color.secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isEnabled ? fill : Color.primary.opacity(0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.white.opacity(configuration.isPressed ? 0.12 : 0))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(
+                        Color.white.opacity(isEnabled ? 0.16 : 0.06),
+                        lineWidth: 1
+                    )
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .opacity(isEnabled ? 1 : 0.7)
+    }
+}
+
+extension Color {
+    static let hyperfocusAction = Color(red: 0.70, green: 0.33, blue: 0.08)
+    static let scatterfocusAction = Color(red: 0.07, green: 0.42, blue: 0.42)
+}

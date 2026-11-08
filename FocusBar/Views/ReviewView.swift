@@ -131,8 +131,9 @@ struct ReviewView: View {
                             Spacer()
                         }
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(record.kind == .hyperfocus ? .orange : .teal)
+                    .buttonStyle(AccentButtonStyle(
+                        fill: record.kind == .hyperfocus ? .hyperfocusAction : .scatterfocusAction
+                    ))
                     .disabled(isSaving)
 
                     if record.kind == .hyperfocus {

@@ -174,8 +174,7 @@ struct IdleView: View {
                         Spacer()
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.orange)
+                .buttonStyle(AccentButtonStyle(fill: .hyperfocusAction))
                 .disabled(!canStartHyperfocus)
 
                 if let errorMessage {
@@ -288,8 +287,7 @@ struct IdleView: View {
                         Spacer()
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.teal)
+                .buttonStyle(AccentButtonStyle(fill: .scatterfocusAction))
                 .disabled(!canStartBreak)
 
                 if let errorMessage {
