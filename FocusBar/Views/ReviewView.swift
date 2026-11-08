@@ -87,7 +87,7 @@ struct ReviewView: View {
                         if note.isEmpty {
                             Text("Optional: what helped or got in the way?")
                                 .font(.caption)
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(.secondary)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 8)
                                 .allowsHitTesting(false)
@@ -154,7 +154,7 @@ struct ReviewView: View {
 
                 Text("A missed session or a low rating is just information, never a verdict.")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .onAppear {
@@ -187,14 +187,14 @@ struct ReviewView: View {
                 if !captures.isEmpty {
                     Text("\(captures.count)")
                         .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                 }
             }
 
             if captures.isEmpty {
                 Text("Nothing parked. That's okay.")
                     .font(.caption)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             } else {
                 VStack(alignment: .leading, spacing: 5) {
                     ForEach(captures) { capture in

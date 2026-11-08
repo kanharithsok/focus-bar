@@ -112,7 +112,7 @@ struct EarlyEndView: View {
 
             Text("Ending early is saved as an early end. No guilt attached.")
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
         }
         .padding(18)
         .frame(width: 380)

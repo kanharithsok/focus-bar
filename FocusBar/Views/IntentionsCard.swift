@@ -25,7 +25,7 @@ struct IntentionsCard: View {
                     Spacer()
                     Text("\(intentions.count) / 3")
                         .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                 }
 
                 if intentions.isEmpty {
@@ -70,7 +70,7 @@ struct IntentionsCard: View {
                                 } label: {
                                     Image(systemName: "xmark")
                                         .font(.caption2)
-                                        .foregroundStyle(.tertiary)
+                                        .foregroundStyle(.secondary)
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("Remove intention")

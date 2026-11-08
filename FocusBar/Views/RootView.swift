@@ -52,14 +52,14 @@ struct RootView: View {
             HStack(spacing: 12) {
                 Text("Local-only")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Button("History") {
                     showHistory = true
                 }
                 .buttonStyle(.plain)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.primary.opacity(0.8))
                 Button("Settings") {
                     // The app runs as an accessory, so opening Settings has to
                     // explicitly activate it before the window is shown.
@@ -68,13 +68,13 @@ struct RootView: View {
                 }
                 .buttonStyle(.plain)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.primary.opacity(0.8))
                 Button("Quit") {
                     NSApp.terminate(nil)
                 }
                 .buttonStyle(.plain)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.primary.opacity(0.8))
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 9)

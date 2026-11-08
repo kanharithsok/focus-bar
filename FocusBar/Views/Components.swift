@@ -61,7 +61,7 @@ struct SectionLabel: View {
         Text(text.uppercased())
             .font(.caption2.weight(.semibold))
             .tracking(0.6)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.primary.opacity(0.8))
     }
 }
 

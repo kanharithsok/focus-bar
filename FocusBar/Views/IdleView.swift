@@ -96,12 +96,12 @@ struct IdleView: View {
 
             Text("Tip: ⌃⌥Space parks a distraction without leaving your work.")
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text("FocusBar keeps your session on this Mac. Nothing is uploaded.")
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .onAppear {

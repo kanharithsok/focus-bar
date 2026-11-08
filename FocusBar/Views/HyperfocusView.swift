@@ -47,7 +47,7 @@ struct HyperfocusView: View {
                     Text("Started \(session.startDate, style: .time)")
                 }
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
 
                 if let blocklist = session.blocklistName {
                     HStack(spacing: 6) {
@@ -96,7 +96,7 @@ struct HyperfocusView: View {
 
                 Text("FocusBar cannot prevent force quitting or restarting your Mac.")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
             .sheet(isPresented: $showEarlyEnd) {
                 EarlyEndView(delaySeconds: app.settings.settings.earlyEndDelaySeconds)

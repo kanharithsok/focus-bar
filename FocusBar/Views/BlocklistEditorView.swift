@@ -62,7 +62,7 @@ struct BlocklistEditorView: View {
                         }
                         Text("YouTube is present but off by default.")
                             .font(.caption2)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary)
                     }
 
                     VStack(alignment: .leading, spacing: 5) {
@@ -71,7 +71,7 @@ struct BlocklistEditorView: View {
                             .textFieldStyle(.roundedBorder)
                         Text("Comma- or newline-separated. Domains match subdomains; paths are ignored.")
                             .font(.caption2)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary)
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
@@ -85,7 +85,7 @@ struct BlocklistEditorView: View {
                         if draft.apps.isEmpty {
                             Text("No applications selected. Use Add Application to resolve an installed app's bundle identifier.")
                                 .font(.caption2)
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         } else {
                             ForEach(draft.apps) { blockedApp in
@@ -97,7 +97,7 @@ struct BlocklistEditorView: View {
                                             .font(.caption)
                                         Text(blockedApp.bundleID)
                                             .font(.caption2)
-                                            .foregroundStyle(.tertiary)
+                                            .foregroundStyle(.secondary)
                                     }
                                     Spacer()
                                     Button {
@@ -114,7 +114,7 @@ struct BlocklistEditorView: View {
 
                         Text("FocusBar hides apps by default. It never force-quits. A quit request is a normal request the app can refuse.")
                             .font(.caption2)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 

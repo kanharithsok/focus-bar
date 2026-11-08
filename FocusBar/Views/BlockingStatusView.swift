@@ -53,7 +53,7 @@ struct BlockingStatusView: View {
 
                 Text("Best effort only. FocusBar cannot guarantee enforcement; background tabs, fast navigations, and quit requests can be missed or refused.")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -95,7 +95,7 @@ struct BlockingStatusView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Browser Automation permission hasn't been checked yet. Open Safari or Chrome, then check access.")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 Button("Check permission") { app.blockingEngine.retryBrowserPermission() }
                     .buttonStyle(.link)

@@ -22,7 +22,7 @@ struct CaptureView: View {
                 Spacer()
                 Text("⏎ save · esc cancel")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
 
             if let focusObject {
@@ -40,7 +40,7 @@ struct CaptureView: View {
             HStack {
                 Text("Saved locally. Linked to the active session when there is one.")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Button("Cancel", action: onCancel)
                     .keyboardShortcut(.cancelAction)

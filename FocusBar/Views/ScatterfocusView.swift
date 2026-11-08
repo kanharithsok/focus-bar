@@ -93,7 +93,7 @@ struct ScatterfocusView: View {
                     Spacer()
                     Text("Started \(session.startDate, style: .time)")
                         .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                 }
             }
         } else {

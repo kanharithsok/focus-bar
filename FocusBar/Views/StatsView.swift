@@ -150,14 +150,14 @@ struct StatsView: View {
                                     if let detail = attempt.actionDetail {
                                         Text(detail)
                                             .font(.caption2)
-                                            .foregroundStyle(.tertiary)
+                                            .foregroundStyle(.secondary)
                                             .lineLimit(2)
                                     }
                                 }
                                 Spacer()
                                 Text(attempt.timestamp, format: .dateTime.month(.abbreviated).day().hour().minute())
                                     .font(.caption2)
-                                    .foregroundStyle(.tertiary)
+                                    .foregroundStyle(.secondary)
                             }
                         }
 
@@ -175,7 +175,7 @@ struct StatsView: View {
 
                 Text("Only app bundle identifiers or hostnames are stored. FocusBar never stores full URLs, paths, query strings, or page content.")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -189,7 +189,7 @@ struct StatsView: View {
                 if !sessions.isEmpty {
                     Text("\(sessions.count)")
                         .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -249,7 +249,7 @@ private struct MetricCard: View {
                 .monospacedDigit()
             Text(subtitle)
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
         .padding(10)
@@ -292,7 +292,7 @@ private struct SessionHistoryRow: View {
             HStack(spacing: 8) {
                 Text(record.startDate, format: .dateTime.month(.abbreviated).day().hour().minute())
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
 
                 StatusPill(
                     text: record.status.displayName,
@@ -359,7 +359,7 @@ private struct SessionHistoryRow: View {
                     if captures.count > 4 {
                         Text("+ \(captures.count - 4) more")
                             .font(.caption2)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }

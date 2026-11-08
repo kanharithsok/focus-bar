@@ -25,7 +25,7 @@ struct CapturePad: View {
                 if text.isEmpty {
                     Text(placeholder)
                         .font(.caption)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 8)
                         .allowsHitTesting(false)
@@ -48,7 +48,7 @@ struct CapturePad: View {
             HStack {
                 Text("\(saved.count) saved")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Button(isSaving ? "Saving…" : "Save thought") {
                     save()

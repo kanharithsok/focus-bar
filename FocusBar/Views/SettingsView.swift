@@ -133,7 +133,7 @@ struct SettingsView: View {
 
                 Text("FocusBar never force-quits apps, never closes browser tabs, and never claims guaranteed blocking.")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
