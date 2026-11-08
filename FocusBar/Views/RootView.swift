@@ -5,6 +5,15 @@ struct RootView: View {
     @Environment(\.openSettings) private var openSettings
 
     @State private var showHistory = false
+    @State private var contentHeight: CGFloat = 0
+
+    private static let maxContentHeight: CGFloat = 640
+    private static let fallbackContentHeight: CGFloat = 480
+
+    private var scrollHeight: CGFloat {
+        guard contentHeight > 0 else { return Self.fallbackContentHeight }
+        return min(contentHeight, Self.maxContentHeight)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,8 +35,17 @@ struct RootView: View {
                     }
                 }
                 .padding(16)
+                .background(
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: ContentHeightKey.self,
+                            value: proxy.size.height
+                        )
+                    }
+                )
             }
-            .frame(maxHeight: 640)
+            .frame(height: scrollHeight)
+            .scrollBounceBehavior(.basedOnSize)
 
             Divider()
 
@@ -62,9 +80,20 @@ struct RootView: View {
             .padding(.vertical, 9)
         }
         .frame(width: 380)
+        .onPreferenceChange(ContentHeightKey.self) { height in
+            contentHeight = height
+        }
         .sheet(isPresented: $showHistory) {
             StatsView()
                 .environment(app)
         }
+    }
+}
+
+private struct ContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
