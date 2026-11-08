@@ -28,6 +28,7 @@ struct SettingsView: View {
             .padding(20)
         }
         .frame(width: 580, height: 660)
+        .background(WindowFocusView())
         .sheet(item: $editingPreset) { preset in
             BlocklistEditorView(preset: preset)
                 .environment(app)
@@ -256,4 +257,21 @@ private struct SettingsSection<Content: View>: View {
             }
         }
     }
+}
+
+/// Brings the Settings window to the front and makes it key when it appears.
+/// FocusBar is an accessory app, so a newly opened window does not become
+/// active on its own.
+private struct WindowFocusView: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            guard let window = view.window else { return }
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }

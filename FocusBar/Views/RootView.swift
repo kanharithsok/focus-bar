@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(AppModel.self) private var app
+    @Environment(\.openSettings) private var openSettings
 
     @State private var showHistory = false
 
@@ -41,8 +42,11 @@ struct RootView: View {
                 .buttonStyle(.plain)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                SettingsLink {
-                    Text("Settings")
+                Button("Settings") {
+                    // The app runs as an accessory, so opening Settings has to
+                    // explicitly activate it before the window is shown.
+                    NSApp.activate(ignoringOtherApps: true)
+                    openSettings()
                 }
                 .buttonStyle(.plain)
                 .font(.caption)
