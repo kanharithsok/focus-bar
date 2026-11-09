@@ -38,6 +38,18 @@ FocusBar is local-first. There are no accounts, analytics, telemetry, cloud sync
 
 ## Install and run
 
+### Homebrew
+
+```sh
+brew tap kanharithsok/tap
+brew trust kanharithsok/tap
+brew install --cask focusbar
+```
+
+The cask removes the download quarantine flag for this development-signed build. After installing, open FocusBar and enable **Settings → System-wide website blocking** if you want the `/etc/hosts` helper; macOS may ask you to approve it under Login Items & Extensions.
+
+Before uninstalling with Homebrew, use **Settings → System-wide website blocking → Remove helper**. Homebrew uninstalling the app does not automatically remove the background helper registration; see [Uninstalling](#uninstalling).
+
 ### Xcode
 
 1. Open `FocusBar.xcodeproj`.

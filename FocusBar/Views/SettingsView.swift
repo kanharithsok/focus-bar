@@ -378,7 +378,7 @@ struct SettingsView: View {
     private var aboutSection: some View {
         SettingsSection(title: "About") {
             VStack(alignment: .leading, spacing: 5) {
-                Text("FocusBar 1.0 · macOS 14+")
+                Text("FocusBar 1.0.0 · macOS 14+")
                     .font(.caption)
                 Text("Local-first attention management. Blocking is best effort; FocusBar never force-quits apps or closes browser tabs.")
                     .font(.caption2)
