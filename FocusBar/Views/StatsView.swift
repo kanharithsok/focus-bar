@@ -13,6 +13,21 @@ struct StatsView: View {
         app.stats.sessions
     }
 
+    private var sessionGroups: [SessionDayGroup] {
+        let calendar = Calendar.current
+        let groups = Dictionary(grouping: sessions) {
+            calendar.startOfDay(for: $0.startDate)
+        }
+        return groups
+            .map { day, sessions in
+                SessionDayGroup(
+                    day: day,
+                    sessions: sessions.sorted { $0.startDate > $1.startDate }
+                )
+            }
+            .sorted { $0.day > $1.day }
+    }
+
     private var ratedCount: Int {
         app.stats.hyperfocusSessions.filter { $0.rating != nil }.count
     }
@@ -27,9 +42,9 @@ struct StatsView: View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Attention statistics")
+                    Text("History")
                         .font(.title3.weight(.semibold))
-                    Text("Derived from saved session history · local only")
+                    Text("Sessions, focus time, and blocked attempts · local only")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -45,8 +60,8 @@ struct StatsView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     metricsGrid
                     chartCard
-                    blockedAttemptsCard
                     historySection
+                    blockedAttemptsCard
                 }
                 .padding(16)
             }
@@ -204,23 +219,39 @@ struct StatsView: View {
                     }
                 }
             } else {
-                VStack(spacing: 0) {
-                    ForEach(sessions) { session in
-                        SessionHistoryRow(record: session)
-                        if session.id != sessions.last?.id {
-                            Divider()
-                                .padding(.leading, 16)
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    ForEach(sessionGroups) { group in
+                        VStack(alignment: .leading, spacing: 5) {
+                            HStack(alignment: .firstTextBaseline) {
+                                Text(dayTitle(for: group.day))
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text("\(group.sessions.count) session\(group.sessions.count == 1 ? "" : "s")")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            VStack(spacing: 0) {
+                                ForEach(group.sessions) { session in
+                                    SessionHistoryRow(record: session)
+                                    if session.id != group.sessions.last?.id {
+                                        Divider()
+                                            .padding(.leading, 16)
+                                    }
+                                }
+                            }
+                            .background(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(Color.primary.opacity(0.035))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .strokeBorder(Color.primary.opacity(0.07))
+                            )
                         }
                     }
                 }
-                .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color.primary.opacity(0.035))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.07))
-                )
             }
         }
     }
@@ -231,6 +262,20 @@ struct StatsView: View {
         let hours = rounded / 60
         let remainder = rounded % 60
         return remainder == 0 ? "\(hours)h" : "\(hours)h \(remainder)m"
+    }
+
+    private func dayTitle(for day: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(day) {
+            return "Today"
+        }
+        if calendar.isDateInYesterday(day) {
+            return "Yesterday"
+        }
+        if calendar.component(.year, from: day) == calendar.component(.year, from: now) {
+            return day.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
+        }
+        return day.formatted(.dateTime.year().month(.abbreviated).day())
     }
 }
 
@@ -265,6 +310,13 @@ private struct MetricCard: View {
     }
 }
 
+private struct SessionDayGroup: Identifiable {
+    let day: Date
+    let sessions: [SessionRecord]
+
+    var id: Date { day }
+}
+
 private struct SessionHistoryRow: View {
     @Environment(AppModel.self) private var app
     let record: SessionRecord
@@ -290,9 +342,10 @@ private struct SessionHistoryRow: View {
             }
 
             HStack(spacing: 8) {
-                Text(record.startDate, format: .dateTime.month(.abbreviated).day().hour().minute())
+                Text(record.startDate, format: .dateTime.hour().minute())
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .accessibilityLabel(record.startDate.formatted(date: .abbreviated, time: .shortened))
 
                 StatusPill(
                     text: record.status.displayName,
@@ -306,13 +359,16 @@ private struct SessionHistoryRow: View {
                 }
 
                 if let rating = record.rating {
-                    HStack(spacing: 1) {
-                        ForEach(1...5, id: \.self) { value in
-                            Image(systemName: value <= rating ? "star.fill" : "star")
-                                .font(.system(size: 8))
-                                .foregroundStyle(.orange)
-                        }
+                    HStack(spacing: 2) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.orange)
+                        Text("\(rating)/5")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
                     }
+                    .accessibilityElement(children: .ignore)
                     .accessibilityLabel("\(rating) out of 5")
                 }
 
