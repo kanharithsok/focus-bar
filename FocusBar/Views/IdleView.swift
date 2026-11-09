@@ -98,11 +98,6 @@ struct IdleView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-
-            Text("FocusBar keeps your session on this Mac. Nothing is uploaded.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .onAppear {
             guard !didInitializePreset else { return }

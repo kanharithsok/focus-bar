@@ -58,9 +58,6 @@ struct IntentionsCard: View {
                     VStack(alignment: .leading, spacing: 5) {
                         ForEach(intentions) { intention in
                             HStack(alignment: .firstTextBaseline, spacing: 7) {
-                                Image(systemName: "circle")
-                                    .font(.system(size: 7))
-                                    .foregroundStyle(.secondary)
                                 Text(intention.text)
                                     .font(.caption)
                                     .fixedSize(horizontal: false, vertical: true)
