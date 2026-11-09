@@ -31,7 +31,7 @@ FocusBar is local-first. There are no accounts, analytics, telemetry, cloud sync
 - Editable blocklist presets: X/Twitter, Facebook, Instagram, TikTok, Reddit, LinkedIn, Snapchat, Threads, and YouTube (YouTube off by default). Installed apps can be added by resolving their bundle identifiers.
 - Best-effort app blocking via `NSWorkspace` launch/activation notifications. Hide is the default; a normal quit request is optional. FocusBar never force-quits.
 - Best-effort Safari and Google Chrome active-tab guard: immediate check on browser activation, then about once per second while a supported browser is foreground. Blocked tabs are redirected to a bundled local page.
-- Statistics derived from saved session history: today/week focus minutes, 7-day chart, average focus quality, blocked-attempt counts, and full session history.
+- Statistics derived from saved session history: today/week focus minutes, 7-day chart, average focus quality, blocked-attempt counts, and session history grouped by day. Select a session to see its full notes, intentions, and captures.
 - Corrupt or missing JSON is handled gracefully; corrupt files are quarantined, not silently overwritten.
 
 ## Install and run

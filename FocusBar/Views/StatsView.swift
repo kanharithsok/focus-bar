@@ -6,6 +6,7 @@ struct StatsView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var showAllAttempts = false
+    @State private var selectedSession: SessionRecord?
 
     private var now: Date { Date() }
 
@@ -67,6 +68,10 @@ struct StatsView: View {
             }
         }
         .frame(width: 640, height: 660)
+        .sheet(item: $selectedSession) { session in
+            SessionDetailView(record: session)
+                .environment(app)
+        }
     }
 
     private var metricsGrid: some View {
@@ -234,7 +239,14 @@ struct StatsView: View {
 
                             VStack(spacing: 0) {
                                 ForEach(group.sessions) { session in
-                                    SessionHistoryRow(record: session)
+                                    Button {
+                                        selectedSession = session
+                                    } label: {
+                                        SessionHistoryRow(record: session)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityHint("Shows full session details")
+                                    .help("Show session details")
                                     if session.id != group.sessions.last?.id {
                                         Divider()
                                             .padding(.leading, 16)
@@ -339,6 +351,9 @@ private struct SessionHistoryRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
 
             HStack(spacing: 8) {
@@ -349,7 +364,7 @@ private struct SessionHistoryRow: View {
 
                 StatusPill(
                     text: record.status.displayName,
-                    color: record.status == .completed ? .green : .secondary
+                    color: record.status == .completed ? .green : (record.status == .emergencyStop ? .orange : .secondary)
                 )
 
                 if let mode = record.scatterfocusMode {
@@ -381,46 +396,237 @@ private struct SessionHistoryRow: View {
 
                 Spacer()
             }
+        }
+        .contentShape(Rectangle())
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+}
 
-            if let intention = record.intentionText {
-                Label(intention, systemImage: "target")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+private struct SessionDetailView: View {
+    @Environment(AppModel.self) private var app
+    @Environment(\.dismiss) private var dismiss
+
+    let record: SessionRecord
+
+    private var captures: [Capture] {
+        app.captures.captures(for: record.id)
+    }
+
+    private var statusColor: Color {
+        switch record.status {
+        case .completed: return .green
+        case .endedEarly: return .secondary
+        case .emergencyStop: return .orange
+        }
+    }
+
+    private var hasContext: Bool {
+        record.intentionText != nil
+            || record.problemQuestion != nil
+            || record.blocklistName != nil
+            || record.blockingSuspended
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Session details")
+                        .font(.title3.weight(.semibold))
+                    Text(record.startDate.formatted(date: .long, time: .shortened))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("Done") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
             }
+            .padding(16)
 
-            if let reason = record.earlyEndReason, record.status != .completed {
-                Text("Reason: \(reason)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    summaryCard
+                    if hasContext { contextCard }
+                    if let note = record.note, !note.isEmpty {
+                        noteCard(note)
+                    }
+                    if let reason = record.earlyEndReason, record.status != .completed {
+                        reasonCard(reason)
+                    }
+                    if !captures.isEmpty {
+                        capturesCard
+                    }
+                }
+                .padding(16)
             }
+        }
+        .frame(width: 520, height: 560)
+    }
 
-            if let note = record.note, !note.isEmpty {
+    private var summaryCard: some View {
+        Card {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Image(systemName: record.kind == .hyperfocus ? "timer" : "leaf")
+                        .foregroundStyle(record.kind == .hyperfocus ? .orange : .teal)
+                    Text(record.focusObject)
+                        .font(.title3.weight(.semibold))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+                    StatusPill(text: record.status.displayName, color: statusColor)
+                }
+
+                HStack(spacing: 10) {
+                    Text(record.kind.displayName)
+                    if let mode = record.scatterfocusMode {
+                        Text("· \(mode.displayName)")
+                    }
+                    if let rating = record.rating {
+                        HStack(spacing: 2) {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 9))
+                                .foregroundStyle(.orange)
+                            Text("\(rating)/5")
+                                .monospacedDigit()
+                        }
+                    }
+                    Spacer()
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+                Divider()
+
+                HStack(alignment: .top, spacing: 24) {
+                    durationBlock(title: "Planned", seconds: record.plannedDuration)
+                    durationBlock(title: "Actual", seconds: record.actualDuration)
+                    Spacer()
+                }
+            }
+        }
+    }
+
+    private func durationBlock(title: String, seconds: TimeInterval) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            SectionLabel(text: title)
+            Text(durationText(seconds))
+                .font(.callout.weight(.medium))
+                .monospacedDigit()
+        }
+    }
+
+    private var contextCard: some View {
+        Card {
+            VStack(alignment: .leading, spacing: 10) {
+                if let intention = record.intentionText {
+                    detailRow(title: "Intention", value: intention, icon: "target")
+                }
+                if let question = record.problemQuestion, !question.isEmpty {
+                    detailRow(title: "Question", value: question, icon: "puzzlepiece")
+                }
+                if let blocklist = record.blocklistName {
+                    detailRow(title: "Blocklist", value: blocklist, icon: "shield.lefthalf.filled")
+                }
+                if record.blockingSuspended {
+                    detailRow(
+                        title: "Blocking",
+                        value: "Suspended for this break",
+                        icon: "shield.slash"
+                    )
+                }
+            }
+        }
+    }
+
+    private func noteCard(_ note: String) -> some View {
+        Card {
+            VStack(alignment: .leading, spacing: 5) {
+                SectionLabel(text: "Note")
                 Text(note)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+    }
 
-            if !captures.isEmpty {
-                VStack(alignment: .leading, spacing: 3) {
-                    ForEach(captures.prefix(4)) { capture in
-                        HStack(alignment: .top, spacing: 5) {
-                            Text("·")
-                            Text(capture.text)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+    private func reasonCard(_ reason: String) -> some View {
+        Card {
+            VStack(alignment: .leading, spacing: 5) {
+                SectionLabel(text: "Early-end reason")
+                Text(reason)
+                    .font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var capturesCard: some View {
+        Card {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    SectionLabel(text: "Captures")
+                    Spacer()
+                    Text("\(captures.count)")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                    }
-                    if captures.count > 4 {
-                        Text("+ \(captures.count - 4) more")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: 7) {
+                    ForEach(captures) { capture in
+                        HStack(alignment: .top, spacing: 7) {
+                            Image(systemName: captureIcon(capture.source))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 14)
+                                .padding(.top, 2)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(capture.text)
+                                    .font(.callout)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text(capture.createdAt, format: .dateTime.hour().minute())
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 0)
+                        }
                     }
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+    }
+
+    private func detailRow(title: String, value: String, icon: String) -> some View {
+        HStack(alignment: .top, spacing: 7) {
+            Image(systemName: icon)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .frame(width: 14)
+                .padding(.top, 2)
+            VStack(alignment: .leading, spacing: 2) {
+                SectionLabel(text: title)
+                Text(value)
+                    .font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func durationText(_ seconds: TimeInterval) -> String {
+        let minutes = SessionTimer.roundedMinutes(seconds)
+        if minutes < 60 { return "\(minutes) min" }
+        let hours = minutes / 60
+        let remainder = minutes % 60
+        return remainder == 0 ? "\(hours)h" : "\(hours)h \(remainder)m"
+    }
+
+    private func captureIcon(_ source: CaptureSource) -> String {
+        switch source {
+        case .distraction: return "tray.and.arrow.down"
+        case .scatterfocus: return "leaf"
+        case .problemCrunching: return "puzzlepiece"
+        }
     }
 }
