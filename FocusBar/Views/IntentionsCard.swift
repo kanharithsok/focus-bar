@@ -55,11 +55,11 @@ struct IntentionsCard: View {
                         }
                     }
                 } else {
-                    VStack(alignment: .leading, spacing: 5) {
+                    VStack(alignment: .leading, spacing: 7) {
                         ForEach(intentions) { intention in
                             HStack(alignment: .firstTextBaseline, spacing: 7) {
                                 Text(intention.text)
-                                    .font(.caption)
+                                    .font(.body)
                                     .fixedSize(horizontal: false, vertical: true)
                                 Spacer(minLength: 4)
                                 Button {
@@ -112,7 +112,7 @@ struct IntentionsCard: View {
     private var intentionField: some View {
         TextField("e.g. Draft the proposal outline", text: $newText)
             .textFieldStyle(.roundedBorder)
-            .font(.caption)
+            .font(.body)
             .onSubmit(addIntention)
     }
 
