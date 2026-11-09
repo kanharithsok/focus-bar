@@ -14,6 +14,9 @@ final class AppModel {
     let blockedAttempts: BlockedAttemptStore
     let sessionManager: SessionManager
     let blockingEngine: BlockingEngine
+    let systemBlockingService: SystemBlockingService
+    let systemBlockingClient: SystemBlockingClient
+    let mozillaRestarter: MozillaBrowserRestarter
     let capturePanel: CapturePanelController
     let notifications: NotificationService
     let loginItem: LoginItemManager
@@ -37,9 +40,13 @@ final class AppModel {
             statsStore: stats,
             settingsStore: settings
         )
+        let systemBlockingService = SystemBlockingService()
+        let systemBlockingClient = SystemBlockingClient(service: systemBlockingService)
+        let mozillaRestarter = MozillaBrowserRestarter()
         let blockingEngine = BlockingEngine(
             attemptStore: blockedAttempts,
-            notifications: notifications
+            notifications: notifications,
+            systemBlocking: systemBlockingClient
         )
 
         self.persistence = persistence
@@ -50,6 +57,9 @@ final class AppModel {
         self.blockedAttempts = blockedAttempts
         self.sessionManager = sessionManager
         self.blockingEngine = blockingEngine
+        self.systemBlockingService = systemBlockingService
+        self.systemBlockingClient = systemBlockingClient
+        self.mozillaRestarter = mozillaRestarter
         self.capturePanel = CapturePanelController()
         self.notifications = notifications
         self.loginItem = loginItem
@@ -84,6 +94,7 @@ final class AppModel {
         await captures.load()
         await intentions.load()
         await blockedAttempts.load()
+        systemBlockingService.refresh()
         await sessionManager.restore()
         loginItem.refresh()
 
@@ -116,6 +127,9 @@ final class AppModel {
         startupWarning = nil
         sessionManager.clearError()
         blockingEngine.clearError()
+        systemBlockingService.clearError()
+        systemBlockingClient.clearError()
+        mozillaRestarter.clearError()
         blockedAttempts.clearError()
         stats.clearError()
         captures.clearError()
@@ -124,14 +138,20 @@ final class AppModel {
     }
 
     var combinedError: String? {
-        startupWarning
-            ?? sessionManager.lastError
-            ?? blockingEngine.lastError
-            ?? blockedAttempts.lastError
-            ?? stats.lastError
-            ?? captures.lastError
-            ?? intentions.lastError
-            ?? settings.lastError
+        let errors: [String?] = [
+            startupWarning,
+            sessionManager.lastError,
+            blockingEngine.lastError,
+            systemBlockingService.lastError,
+            systemBlockingClient.lastError,
+            mozillaRestarter.lastError,
+            blockedAttempts.lastError,
+            stats.lastError,
+            captures.lastError,
+            intentions.lastError,
+            settings.lastError
+        ]
+        return errors.compactMap { $0 }.first
     }
 
     var dataDirectory: URL {
@@ -154,10 +174,20 @@ final class AppModel {
             preset: settings.preset(id: session.blocklistPresetID),
             settings: settings.settings
         )
+
+        if settings.settings.systemWideWebsiteBlockingEnabled,
+           settings.settings.restartMozillaBrowsersOnSessionChange {
+            mozillaRestarter.restartWhenBlockStateChanges(expectedBlocked: true)
+        }
     }
 
     private func endBlocking(record: SessionRecord) {
         blockingEngine.stop()
+
+        if settings.settings.systemWideWebsiteBlockingEnabled,
+           settings.settings.restartMozillaBrowsersOnSessionChange {
+            mozillaRestarter.restartWhenBlockStateChanges(expectedBlocked: false)
+        }
 
         guard settings.settings.notificationsEnabled else { return }
         let title = record.kind == .hyperfocus ? "Hyperfocus ended" : "Break ended"

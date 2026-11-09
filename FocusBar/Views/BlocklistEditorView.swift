@@ -221,6 +221,7 @@ struct BlocklistEditorView: View {
             if let settingsError = app.settings.lastError {
                 errorMessage = settingsError
             } else {
+                app.blockingEngine.settingsDidChange(app.settings.settings)
                 dismiss()
             }
         }

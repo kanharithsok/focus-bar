@@ -9,6 +9,8 @@ final class BlockingEngine {
         var isActive = false
         var appBlockingEnabled = false
         var websiteBlockingEnabled = false
+        var systemBlockingConfigured = false
+        var systemHostnameCount = 0
         var suspended = false
         var appCount = 0
         var domainCount = 0
@@ -24,6 +26,7 @@ final class BlockingEngine {
     @ObservationIgnored private let notifications: NotificationService
     @ObservationIgnored private let appBlocker: AppBlocker
     @ObservationIgnored private let browserBlocker: BrowserBlocker
+    @ObservationIgnored private let systemBlocking: SystemBlockingClient
 
     @ObservationIgnored private var currentSession: ActiveSession?
     @ObservationIgnored private var currentSettings: AppSettings?
@@ -35,9 +38,14 @@ final class BlockingEngine {
         [appBlocker, browserBlocker]
     }
 
-    init(attemptStore: BlockedAttemptStore, notifications: NotificationService) {
+    init(
+        attemptStore: BlockedAttemptStore,
+        notifications: NotificationService,
+        systemBlocking: SystemBlockingClient
+    ) {
         self.attemptStore = attemptStore
         self.notifications = notifications
+        self.systemBlocking = systemBlocking
         self.appBlocker = AppBlocker()
         self.browserBlocker = BrowserBlocker()
 
@@ -74,6 +82,7 @@ final class BlockingEngine {
     func stop() {
         appBlocker.stop()
         browserBlocker.stop()
+        systemBlocking.stop()
         currentSession = nil
         currentSettings = nil
         currentPreset = nil
@@ -92,6 +101,13 @@ final class BlockingEngine {
         applyConfiguration()
     }
 
+    func settingsDidChange(_ settings: AppSettings) {
+        guard let session = currentSession else { return }
+        currentSettings = settings
+        currentPreset = settings.presets.first { $0.id == session.blocklistPresetID }
+        applyConfiguration()
+    }
+
     func retryBrowserPermission() {
         browserBlocker.retryPermissionCheck()
         status.browserPermission = browserBlocker.permission
@@ -106,6 +122,7 @@ final class BlockingEngine {
         browserBlocker.stop()
 
         guard let session = currentSession, let settings = currentSettings else {
+            systemBlocking.stop()
             status = Status()
             return
         }
@@ -137,6 +154,14 @@ final class BlockingEngine {
         if plan.websiteBlockingEnabled {
             browserBlocker.start(configuration: configuration)
         }
+        if plan.systemWebsiteBlockingEnabled {
+            systemBlocking.start(
+                sessionID: session.id,
+                hostnames: HostsBlocklistExpander.expand(domains: domains)
+            )
+        } else {
+            systemBlocking.stop()
+        }
 
         let permission = browserBlocker.permission
         status = Status(
@@ -145,6 +170,8 @@ final class BlockingEngine {
             websiteBlockingEnabled: plan.websiteBlockingEnabled
                 && permission != .denied
                 && permission != .timedOut,
+            systemBlockingConfigured: plan.systemWebsiteBlockingEnabled,
+            systemHostnameCount: plan.systemHostnameCount,
             suspended: plan.suspended,
             appCount: plan.appCount,
             domainCount: plan.domainCount,

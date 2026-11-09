@@ -29,6 +29,8 @@ struct AppSettings: Codable, Equatable, Sendable {
     var commitMode: Bool
     var blockApps: Bool
     var blockWebsites: Bool
+    var systemWideWebsiteBlockingEnabled: Bool
+    var restartMozillaBrowsersOnSessionChange: Bool
     var blockDuringScatterfocus: Bool
     var appBlockingAction: AppBlockingAction
     var presets: [BlocklistPreset]
@@ -40,6 +42,8 @@ struct AppSettings: Codable, Equatable, Sendable {
         commitMode: Bool,
         blockApps: Bool,
         blockWebsites: Bool,
+        systemWideWebsiteBlockingEnabled: Bool,
+        restartMozillaBrowsersOnSessionChange: Bool,
         blockDuringScatterfocus: Bool,
         appBlockingAction: AppBlockingAction,
         presets: [BlocklistPreset],
@@ -50,6 +54,8 @@ struct AppSettings: Codable, Equatable, Sendable {
         self.commitMode = commitMode
         self.blockApps = blockApps
         self.blockWebsites = blockWebsites
+        self.systemWideWebsiteBlockingEnabled = systemWideWebsiteBlockingEnabled
+        self.restartMozillaBrowsersOnSessionChange = restartMozillaBrowsersOnSessionChange
         self.blockDuringScatterfocus = blockDuringScatterfocus
         self.appBlockingAction = appBlockingAction
         self.presets = presets
@@ -64,6 +70,8 @@ struct AppSettings: Codable, Equatable, Sendable {
             commitMode: false,
             blockApps: true,
             blockWebsites: true,
+            systemWideWebsiteBlockingEnabled: false,
+            restartMozillaBrowsersOnSessionChange: false,
             blockDuringScatterfocus: true,
             appBlockingAction: .hide,
             presets: [preset],
@@ -77,6 +85,8 @@ struct AppSettings: Codable, Equatable, Sendable {
         case commitMode
         case blockApps
         case blockWebsites
+        case systemWideWebsiteBlockingEnabled
+        case restartMozillaBrowsersOnSessionChange
         case blockDuringScatterfocus
         case appBlockingAction
         case presets
@@ -92,6 +102,14 @@ struct AppSettings: Codable, Equatable, Sendable {
         commitMode = try container.decodeIfPresent(Bool.self, forKey: .commitMode) ?? fallback.commitMode
         blockApps = try container.decodeIfPresent(Bool.self, forKey: .blockApps) ?? fallback.blockApps
         blockWebsites = try container.decodeIfPresent(Bool.self, forKey: .blockWebsites) ?? fallback.blockWebsites
+        systemWideWebsiteBlockingEnabled = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .systemWideWebsiteBlockingEnabled
+        ) ?? fallback.systemWideWebsiteBlockingEnabled
+        restartMozillaBrowsersOnSessionChange = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .restartMozillaBrowsersOnSessionChange
+        ) ?? fallback.restartMozillaBrowsersOnSessionChange
         blockDuringScatterfocus = try container.decodeIfPresent(Bool.self, forKey: .blockDuringScatterfocus) ?? fallback.blockDuringScatterfocus
         appBlockingAction = try container.decodeIfPresent(AppBlockingAction.self, forKey: .appBlockingAction) ?? fallback.appBlockingAction
         presets = try container.decodeIfPresent([BlocklistPreset].self, forKey: .presets) ?? fallback.presets

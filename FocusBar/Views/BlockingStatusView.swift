@@ -33,6 +33,10 @@ struct BlockingStatusView: View {
                         detail: "\(status.browserNames.joined(separator: " + ")) · \(status.domainCount) domains"
                     )
 
+                    if status.systemBlockingConfigured {
+                        systemBlockingRow
+                    }
+
                     if status.websiteBlockingEnabled
                         || status.browserPermission == .denied
                         || status.browserPermission == .timedOut {
@@ -55,6 +59,13 @@ struct BlockingStatusView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+
+                if status.systemBlockingConfigured {
+                    Text("System-wide blocking uses /etc/hosts. VPNs, encrypted DNS, cached DNS, and IP-literal URLs can bypass it.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
@@ -101,6 +112,66 @@ struct BlockingStatusView: View {
                     .buttonStyle(.link)
                     .font(.caption2)
             }
+        }
+    }
+
+    private var systemBlockingRow: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Image(systemName: "globe")
+                    .font(.caption2)
+                    .frame(width: 14)
+                    .foregroundStyle(systemBlockingColor)
+                Text("All browsers")
+                    .font(.caption)
+                Spacer()
+                Text(systemBlockingDetail)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            if let message = systemBlockingMessage {
+                Text(message)
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var systemBlockingDetail: String {
+        switch app.systemBlockingClient.sessionState {
+        case .active(let count):
+            return "\(count) hostnames"
+        case .starting:
+            return "Starting…"
+        case .idle:
+            return "Off"
+        case .unavailable:
+            return "Off · setup needed"
+        case .failed:
+            return "Error"
+        }
+    }
+
+    private var systemBlockingMessage: String? {
+        switch app.systemBlockingClient.sessionState {
+        case .unavailable(let message), .failed(let message):
+            return message
+        default:
+            return nil
+        }
+    }
+
+    private var systemBlockingColor: Color {
+        switch app.systemBlockingClient.sessionState {
+        case .active:
+            return .green
+        case .starting, .unavailable, .failed:
+            return .orange
+        case .idle:
+            return .secondary
         }
     }
 

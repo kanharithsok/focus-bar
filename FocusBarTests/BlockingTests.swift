@@ -42,6 +42,38 @@ final class BlockingPlanTests: XCTestCase {
         XCTAssertTrue(plan.notes.isEmpty)
     }
 
+    func testSystemWideBlockingUsesExpandedHostnames() {
+        var settings = AppSettings.defaults()
+        settings.systemWideWebsiteBlockingEnabled = true
+        settings.blockWebsites = false
+
+        let plan = BlockingPlan.make(
+            session: session(),
+            preset: preset,
+            settings: settings,
+            blockedPageAvailable: true
+        )
+
+        XCTAssertFalse(plan.websiteBlockingEnabled)
+        XCTAssertTrue(plan.systemWebsiteBlockingEnabled)
+        XCTAssertGreaterThan(plan.systemHostnameCount, plan.domainCount)
+    }
+
+    func testSystemWideBlockingFollowsScatterfocusSuspension() {
+        var settings = AppSettings.defaults()
+        settings.systemWideWebsiteBlockingEnabled = true
+
+        let plan = BlockingPlan.make(
+            session: session(kind: .scatterfocus, suspended: true),
+            preset: preset,
+            settings: settings,
+            blockedPageAvailable: true
+        )
+
+        XCTAssertFalse(plan.systemWebsiteBlockingEnabled)
+        XCTAssertEqual(plan.systemHostnameCount, 0)
+    }
+
     func testScatterfocusBlockingCanBeDisabledInSettings() {
         var settings = AppSettings.defaults()
         settings.blockDuringScatterfocus = false
@@ -206,6 +238,8 @@ final class AppSettingsDecodingTests: XCTestCase {
         XCTAssertTrue(settings.commitMode)
         XCTAssertTrue(settings.blockApps)
         XCTAssertTrue(settings.blockWebsites)
+        XCTAssertFalse(settings.systemWideWebsiteBlockingEnabled)
+        XCTAssertFalse(settings.restartMozillaBrowsersOnSessionChange)
         XCTAssertTrue(settings.blockDuringScatterfocus)
         XCTAssertEqual(settings.appBlockingAction, .hide)
         XCTAssertEqual(settings.presets.count, 1)
@@ -218,6 +252,18 @@ final class AppSettingsDecodingTests: XCTestCase {
         let json = #"{"earlyEndDelaySeconds":20}"#
         let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
         XCTAssertEqual(settings.earlyEndDelaySeconds, 20)
+    }
+
+    func testSystemWideBlockingDecodesStoredValue() throws {
+        let json = #"{"systemWideWebsiteBlockingEnabled":true}"#
+        let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
+        XCTAssertTrue(settings.systemWideWebsiteBlockingEnabled)
+    }
+
+    func testMozillaRestartDecodesStoredValue() throws {
+        let json = #"{"restartMozillaBrowsersOnSessionChange":true}"#
+        let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
+        XCTAssertTrue(settings.restartMozillaBrowsersOnSessionChange)
     }
 
     func testUnknownSelectedPresetFallsBackToFirst() throws {

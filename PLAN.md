@@ -34,6 +34,8 @@ PersistenceController (actor, versioned JSON, atomic writes)
 
 - `SessionManager`: explicit state machine (`idle`, `hyperfocus`, `scatterfocus`, `review`), absolute end dates, timer recalculation after wake/relaunch, early-end and review flow.
 - `BlockingEngine`: owns `AppBlocker` and `BrowserBlocker`; both conform to the `Blocker` protocol; reports best-effort status honestly.
+- `SystemBlockingService` / `SystemBlockingClient`: register and talk to the embedded `FocusBarHelper` LaunchDaemon over XPC, heartbeat a 30-second fail-open lease, and report system-wide state honestly.
+- `FocusBarHelper` (separate privileged target): validates XPC callers by code-signing requirement, expands/validates hostnames, and atomically manages only its marked `/etc/hosts` section.
 - `StatsStore`: owns session history and derives all statistics on demand. No duplicated totals.
 - `CaptureStore` / `IntentionStore` / `BlockedAttemptStore`: JSON-backed `@Observable` stores.
 - `PersistenceController`: actor; `~/Library/Application Support/FocusBar/`; versioned envelope; `Data.write(options: .atomic)`; corrupt files quarantined, never silently overwritten.
@@ -146,16 +148,32 @@ Acceptance:
 - [x] No streak/guilt features.
 - [x] M1–M5 integrated; build + tests pass.
 
-### M6 — Future system-wide blocking
+### M6 — System-wide website blocking
 
-Status: **not started, explicitly out of v1 scope**
+Status: **implemented, opt-in; automated tests and local macOS 27.2 helper/hosts verification pass; cross-browser manual check remains**
 
-Design notes:
-- Requires explicit user approval before any helper/daemon registration or `/etc/hosts` writes.
-- Preferred shape: `SMAppService` privileged helper + XPC, fail-open lease, heartbeat expiry, stale-rule recovery on boot, marked FocusBar entries only.
-- `/etc/hosts` cannot express wildcards; maintain explicit hostname/subdomain list; flush DNS.
-- Hosts blocking is bypassable by VPN/encrypted DNS.
-- Do not implement or install anything until authorized.
+- Embedded, signed `FocusBarHelper` LaunchDaemon registered on demand with `SMAppService`; the app must be signed by the same team and installed in `/Applications`.
+- `SystemBlockingService` owns registration/approval state. `SystemBlockingClient` owns XPC, the heartbeat task, and live session status.
+- The helper validates XPC callers with a code-signing requirement, validates every hostname, and only removes/appends its own marked `/etc/hosts` section.
+- Fail-open lease: 30 seconds, heartbeat every 8 seconds; cleanup on session end, lease expiry, helper reinstall, helper restart, or reboot. Writes are atomic and preserve the hosts file's permissions.
+- Common subdomains are expanded (`www.`, `m.`, `mobile.`, plus service-specific hosts). `/etc/hosts` has no wildcard syntax, so uncommon subdomains can still slip through.
+- DNS is flushed after apply/remove. Blocking is bypassable by VPNs, encrypted DNS/DoH, cached DNS, and IP-literal URLs. System-wide attempts are not counted.
+- Optional Zen/Firefox restart at session start/end clears browser-internal DNS/connections. FocusBar sends a normal quit request and reopens the browser; it never force-terminates and does not delete browser profile/cache data. A cached offline shell may still need a reload.
+- Off by default; the user enables it in Settings. The helper is not registered at launch or without a user action.
+
+Acceptance:
+- [x] Helper target builds, signs, embeds at `Contents/MacOS/FocusBarHelper`, and the LaunchDaemon plist is at `Contents/Library/LaunchDaemons/`.
+- [x] `SMAppService` registers the daemon; it runs as root and answers XPC.
+- [x] Unsigned/wrong-team XPC clients are rejected.
+- [x] Marked hosts section is applied/removed; user content and checksum are restored.
+- [x] Lease expiry removes the block without a heartbeat.
+- [x] Helper reinstall/launch cleanup removes a stale block; unregister/SIGTERM cleanup removes it immediately.
+- [x] Live enable/disable mid-session updates the hosts section.
+- [x] Unit tests cover hostname validation, expansion, rendering, file-manager round trips, settings, and blocking-plan decisions.
+- [x] Manual: Safari, Chrome, Brave, and Zen (Firefox-based) blocked new navigations during a real session; Firefox/Arc were not installed on this machine.
+- [x] Manual: session-end cleanup removed the hosts block; Safari loaded YouTube and normal DNS returned after the session.
+- [x] Manual: opt-in Zen restart worked at session start/restore and session end. After the start restart, a normal Zen tab showed the cached YouTube shell as offline with no content; after the end restart, a normal Zen tab loaded the full YouTube homepage without a hard reload.
+- [ ] Manual: force-quit lease cleanup and reboot cleanup on a real desktop session.
 
 ## 4. Key decisions and assumptions
 
@@ -167,12 +185,17 @@ Design notes:
 - **Completed sessions** ending while the app was closed are finalized at their planned end time. Reviews are offered for sessions that ended within 24 h; older ones are saved without a review prompt.
 - **Early-end rules apply to Hyperfocus.** Scatterfocus breaks can be ended immediately (low-stakes breaks), recorded as `endedEarly` without a reason.
 - **Statistics attribution:** focus minutes are attributed to the session start day; only Hyperfocus contributes focus minutes. Early-ended sessions contribute actual elapsed time.
-- **Blocking is best-effort.** No guarantee, no force-kill, no hosts-file or privileged helper.
+- **Blocking is best-effort.** No guarantee, no force-kill. M6 adds opt-in system-wide hosts blocking through a signed privileged helper; it is not a Network Extension and can be bypassed.
+- **M6 helper registration is user-initiated.** Enabling system-wide blocking in Settings is the consent point. The app does not register the daemon at launch.
+- **M6 hosts management is marker-scoped.** The helper removes/appends only its own section, refuses malformed existing markers instead of overwriting, writes atomically, preserves the existing mode, and flushes DNS.
+- **M6 leases are fail-open.** A 30-second lease with an 8-second heartbeat means a crashed/force-quit app cannot leave a permanent block. The helper also clears stale sections on launch/reboot.
+- **M6 requires a signed app in `/Applications`.** Ad-hoc builds are fine for tests but cannot register a usable daemon. The helper's XPC listener validates callers by code-signing requirement.
+- **M6 hosts has no wildcards.** Presets are expanded to common exact hostnames; uncommon subdomains remain out of scope. VPN/encrypted DNS/cached DNS/IP-literal limitations are surfaced in the UI and README.
 - **Browser support is Safari + Chrome only** until other browsers are individually tested.
 - **YouTube is present but disabled** in the default social-media preset.
 - **No notifications request at launch**; permission is requested when the first session starts if notifications are enabled.
 - **App is local-first**: no network code, no analytics, no accounts.
-- **Start at login** uses `SMAppService.mainApp` and is user-toggleable in Settings; it does not add a helper, daemon, or privileged component.
+- **Start at login** uses `SMAppService.mainApp` and is user-toggleable in Settings. It is separate from the M6 system-blocking daemon.
 
 ## 5. Technical risks and limitations
 
@@ -181,8 +204,12 @@ Design notes:
 - Browser guard inspects only the active tab and can miss fast navigations between ~1 s polls.
 - `osascript` subprocess is used for Apple Events to keep execution off the main thread and enforce timeouts; TCC attribution should be verified manually on a signed build.
 - Menu-bar-only apps have limited affordances for modal emergency UI; emergency stop uses an `NSAlert` and the Session menu.
-- App-blocking observers are in-process: if FocusBar is force-quit, blocking stops. This is stated in the UI/docs.
+- App-blocking observers are in-process: if FocusBar is force-quit, app hiding and the browser guard stop. The system-wide hosts block is removed after its 30-second lease expires. This is stated in the UI/docs.
 - Corrupt JSON is quarantined with a `.corrupt-<timestamp>` suffix; data is preserved for recovery but not automatically merged.
+- M6 requires a properly signed app in `/Applications`; ad-hoc and unsigned Debug builds cannot register the daemon and are rejected by its XPC code-signing check. The UI detects ad-hoc signing and explains the setup instead of showing a generic XPC error. Registration can throw `EPERM` on current macOS even when the daemon was recorded successfully, so status is authoritative rather than the thrown error.
+- Deleting FocusBar while a session is active does not leave a permanent hosts block: the helper's lease expires after 30 seconds. Deleting the app does not automatically unregister the LaunchDaemon; before deletion, use **Remove helper**, or remove the stale background item in System Settings afterward. Browser-cached offline/error pages can outlive the helper cleanup until the browser is reloaded or restarted.
+- M6 is a root daemon. Its XPC surface must stay minimal, validate callers by code-signing requirement, and only touch the marked hosts section. A bug here can break name resolution, so writes are atomic and fail-open.
+- `/etc/hosts` cannot express wildcards and is bypassable by VPN/encrypted DNS/cached DNS/IP literals. It cannot count blocked attempts or serve a custom HTTPS page for other browsers.
 
 ## 6. Verification commands
 
@@ -192,6 +219,13 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBar -configuration Debug \
   -destination 'platform=macOS' build CODE_SIGNING_ALLOWED=NO
 xcodebuild -project FocusBar.xcodeproj -scheme FocusBar \
   -destination 'platform=macOS' test CODE_SIGNING_ALLOWED=NO
+
+# Signed build required to exercise M6's helper. Use your own team ID and
+# install the resulting app in /Applications.
+xcodebuild -project FocusBar.xcodeproj -scheme FocusBar -configuration Release \
+  -destination 'platform=macOS' build \
+  CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Automatic \
+  CODE_SIGN_IDENTITY="Apple Development" DEVELOPMENT_TEAM=YOUR_TEAM_ID
 ```
 
 ## 7. Verification log
@@ -199,12 +233,26 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBar \
 | Date | Check | Result |
 | --- | --- | --- |
 | 2026-11-09 | `xcodebuild ... build` (Debug, macOS) | **BUILD SUCCEEDED** |
-| 2026-11-09 | `xcodebuild ... test` (macOS) | **65 tests, 0 failures** |
+| 2026-11-09 | `xcodebuild ... test` (macOS) | **83 tests, 0 failures** |
 | 2026-11-09 | Built `Info.plist` | `LSUIElement = true`, `NSAppleEventsUsageDescription` present |
 | 2026-11-09 | Built resources | `blocked.html` present in app bundle |
 | 2026-11-09 | `AppleScriptRunner` tests | success, timeout, permission (-1743), execution error all mapped correctly |
 | 2026-11-09 | Session/persistence/statistics tests | state transitions, relaunch restore, expiry, review, intentions, captures, hostname matching, dedup, stats all pass |
 | 2026-11-09 | Launch smoke test | process launched, LaunchServices type `UIElement`, default `settings.json` written at launch |
+| 2026-11-09 | Signed Release build + helper layout | **BUILD SUCCEEDED**; helper at `Contents/MacOS/FocusBarHelper`, plist at `Contents/Library/LaunchDaemons/`; deep code-sign verification passes with matching team |
+| 2026-11-09 | `SMAppService` registration | daemon enabled/allowed in `sfltool dumpbtm`; running as root; XPC replies |
+| 2026-11-09 | Hosts apply/remove | marked section added; `example.com` resolved to loopback and HTTPS failed; `end` restored the exact original checksum |
+| 2026-11-09 | Lease expiry | block removed after 30 s without heartbeat |
+| 2026-11-09 | Helper reinstall cleanup | stale marked section removed on helper relaunch |
+| 2026-11-09 | Unregister/SIGTERM cleanup | active marked section removed immediately when the daemon was unregistered |
+| 2026-11-09 | Session integration | active session reported 45 expanded hostnames; mid-session disable removed the block, re-enable restored it, session end removed it |
+| 2026-11-09 | XPC caller validation | unsigned/teamless client rejected by the helper |
+| 2026-11-09 | Safari real-browser test | `example.com` loaded as control; `youtube.com`, `www.youtube.com`, and `x.com` redirected to the bundled blocked page during a session; `youtube.com` loaded normally after session end |
+| 2026-11-09 | Chrome real-browser test | `example.com` loaded as control; `youtube.com` redirected to the blocked page; headless Chrome returned `ERR_CONNECTION_REFUSED` for `youtube.com`, `www.youtube.com`, and `youtu.be` |
+| 2026-11-09 | Brave real-browser test | `example.com` loaded as control; `youtube.com` showed `ERR_CONNECTION_REFUSED` during the session |
+| 2026-11-09 | Zen real-browser test | During an active 57-hostname block, a new normal-window tab loaded the full YouTube homepage from Zen’s cached DNS/connection pool; a fresh private window showed “Unable to connect — Zen can’t connect to the server at www.youtube.com.” Confirms browser cache/connection reuse, not a hosts bypass |
+| 2026-11-09 | Session-end cleanup | 57-hostname block removed automatically at the planned session end; DNS returned to public addresses and `curl https://youtube.com` returned HTTP 301 |
+| 2026-11-09 | Zen restart setting | After app restore with an active session, Zen’s PID changed (quit/reopen) and a normal tab showed the cached YouTube shell as offline; at session end Zen restarted again and a normal tab loaded the full YouTube homepage without a hard reload |
 
 Automated coverage includes:
 - session transitions, validation, expiration, sleep/relaunch-style clock jumps;
@@ -212,13 +260,15 @@ Automated coverage includes:
 - review persistence and intention/capture association;
 - versioned persistence, atomic replacement, corrupt-file quarantine, newer-schema rejection;
 - hostname normalization/subdomain matching and unrelated-domain rejection;
+- hostname validation, common-subdomain expansion, hosts marker rendering/removal, malformed-block rejection, file-manager round trips, and permission preservation;
+- system-wide settings decoding and blocking-plan decisions;
 - blocked-attempt dedup and statistics derivation;
-- blocking-plan decisions and AppleScript timeout/permission mapping.
+- AppleScript timeout/permission mapping.
 
 ## 8. Current state / next actions
 
-- v1 feature set implemented (M1–M5).
-- Automated build and unit tests pass in this environment; see the verification log above.
+- v1 feature set implemented (M1–M6); M6 is opt-in from Settings.
+- Automated build and unit tests pass in this environment; helper registration, hosts apply/remove, lease expiry, reinstall cleanup, and live session toggling were verified locally on macOS 27.2. See the verification log above.
 - Remaining work is manual, permission-dependent verification:
   1. Launch the app, verify menu-bar-only behavior and popover layout.
   2. Grant Automation access and test Safari/Chrome active-tab redirect.
@@ -226,5 +276,5 @@ Automated coverage includes:
   4. Verify the global capture shortcut and panel feel.
   5. Confirm notification permission behavior.
   6. Register FocusBar as a login item and verify it launches after logging out and back in.
-- M6 requires explicit approval and is not started.
+  7. Enable system-wide blocking and verify blocked domains in Safari, Chrome, and Brave (verified locally); verify Firefox/Arc if installed; force-quit FocusBar and confirm lease cleanup; reboot and confirm stale-block cleanup.
 - Optional macOS Focus/Shortcuts integration is not implemented; it was marked optional in the brief.

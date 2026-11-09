@@ -22,6 +22,7 @@ struct SettingsView: View {
                 generalSection
                 sessionSection
                 blockingSection
+                systemBlockingSection
                 presetsSection
                 shortcutSection
                 privacySection
@@ -31,9 +32,15 @@ struct SettingsView: View {
         }
         .frame(width: 580, height: 660)
         .background(WindowFocusView())
-        .onAppear { app.loginItem.refresh() }
+        .onAppear {
+            app.loginItem.refresh()
+            app.systemBlockingService.refresh()
+            app.systemBlockingClient.refreshHelperStatus()
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             app.loginItem.refresh()
+            app.systemBlockingService.refresh()
+            app.systemBlockingClient.refreshHelperStatus()
         }
         .sheet(item: $editingPreset) { preset in
             BlocklistEditorView(preset: preset)
@@ -184,6 +191,100 @@ struct SettingsView: View {
         }
     }
 
+    private var systemBlockingSection: some View {
+        SettingsSection(title: "System-wide website blocking") {
+            VStack(alignment: .leading, spacing: 10) {
+                Toggle("Block listed websites in all browsers", isOn: systemWideBinding)
+
+                Text("Installs a signed background helper that adds a marked section to /etc/hosts while a focus session is active. It applies to Safari, Chrome, Firefox, and other apps, not just the active browser tab. The section is removed when the session ends or after a short lease if FocusBar stops.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Toggle(
+                    "Restart Zen/Firefox at session start and end",
+                    isOn: settingBinding(\.restartMozillaBrowsersOnSessionChange)
+                )
+                .disabled(!app.settings.settings.systemWideWebsiteBlockingEnabled)
+
+                Text("Zen and Firefox can keep cached DNS, pages, and connections after /etc/hosts changes. This option asks running Zen/Firefox to quit and reopens them so the block applies immediately and clears the cached error page afterward. FocusBar only sends a normal quit request; save your work first.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button("Restart Zen/Firefox now") {
+                    app.mozillaRestarter.restartNow()
+                }
+                .font(.caption)
+
+                if app.systemBlockingService.isAdHocSigned {
+                    Text("This development build is ad-hoc signed. The privileged helper only accepts signed FocusBar builds; use the signed app in /Applications or sign this build with your Apple Development team.")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                HStack(spacing: 8) {
+                    Text("System helper")
+                        .font(.caption)
+                    StatusPill(
+                        text: helperStatusText,
+                        color: helperStatusColor
+                    )
+                    Spacer()
+                    if app.systemBlockingService.requiresApproval {
+                        Button("Open Login Items") {
+                            app.systemBlockingService.openLoginItemsSettings()
+                        }
+                        .font(.caption)
+                    } else if !app.systemBlockingService.isInstalled {
+                        Button("Install helper") {
+                            app.systemBlockingService.installIfNeeded()
+                        }
+                        .font(.caption)
+                        .disabled(app.systemBlockingService.isAdHocSigned)
+                    } else {
+                        Button("Remove helper") {
+                            Task {
+                                await app.settings.update {
+                                    $0.systemWideWebsiteBlockingEnabled = false
+                                }
+                                app.systemBlockingClient.stop()
+                                app.systemBlockingService.uninstall()
+                                app.blockingEngine.settingsDidChange(app.settings.settings)
+                            }
+                        }
+                        .font(.caption)
+                    }
+                }
+
+                if app.systemBlockingService.requiresApproval {
+                    Text("macOS needs your approval in System Settings > General > Login Items before the helper can run.")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if let error = app.systemBlockingService.lastError {
+                    Text(error)
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Text("Before deleting FocusBar, choose Remove helper. If the app is already gone, remove FocusBar under System Settings > General > Login Items & Extensions. If FocusBar disappears during a session, its helper lease expires after 30 seconds and clears the marked hosts section.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("Best effort: VPNs, encrypted DNS, cached DNS, IP-literal URLs, and apps that ignore the system hosts file can bypass this. /etc/hosts cannot express wildcards, so FocusBar includes common subdomains but can't cover every possible one.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
     private var presetsSection: some View {
         SettingsSection(title: "Blocklist presets") {
             VStack(alignment: .leading, spacing: 8) {
@@ -203,7 +304,10 @@ struct SettingsView: View {
                         .font(.caption)
                         if !preset.isBuiltIn {
                             Button {
-                                Task { await app.settings.deletePreset(id: preset.id) }
+                                Task {
+                                    await app.settings.deletePreset(id: preset.id)
+                                    app.blockingEngine.settingsDidChange(app.settings.settings)
+                                }
                             } label: {
                                 Image(systemName: "trash")
                             }
@@ -298,9 +402,55 @@ struct SettingsView: View {
             set: { newValue in
                 Task {
                     await app.settings.update { $0[keyPath: keyPath] = newValue }
+                    app.blockingEngine.settingsDidChange(app.settings.settings)
                 }
             }
         )
+    }
+
+    private var systemWideBinding: Binding<Bool> {
+        Binding(
+            get: { app.settings.settings.systemWideWebsiteBlockingEnabled },
+            set: { newValue in
+                Task {
+                    await app.settings.update {
+                        $0.systemWideWebsiteBlockingEnabled = newValue
+                    }
+                    if newValue {
+                        if !app.systemBlockingService.isAdHocSigned {
+                            app.systemBlockingService.installIfNeeded()
+                        }
+                    } else {
+                        app.systemBlockingClient.stop()
+                    }
+                    app.blockingEngine.settingsDidChange(app.settings.settings)
+                }
+            }
+        )
+    }
+
+    private var helperStatusText: String {
+        switch app.systemBlockingService.helperStatus {
+        case .enabled:
+            return "Installed"
+        case .requiresApproval:
+            return "Needs approval"
+        case .notRegistered, .notFound:
+            return "Not installed"
+        default:
+            return "Unknown"
+        }
+    }
+
+    private var helperStatusColor: Color {
+        switch app.systemBlockingService.helperStatus {
+        case .enabled:
+            return .green
+        case .requiresApproval:
+            return .orange
+        default:
+            return .secondary
+        }
     }
 
     private var loginItemBinding: Binding<Bool> {

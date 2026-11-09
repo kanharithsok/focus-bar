@@ -33,8 +33,19 @@ targets:
     platform: macOS
     sources:
       - path: FocusBar
+      - path: FocusBarShared
+      - path: FocusBarHelper/com.kanharithsok.FocusBar.helper.plist
+        buildPhase:
+          copyFiles:
+            destination: wrapper
+            subpath: Contents/Library/LaunchDaemons
     dependencies:
       - package: KeyboardShortcuts
+      - target: FocusBarHelper
+        embed: true
+        link: false
+        copy:
+          destination: executables
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kanharithsok.FocusBar
@@ -59,6 +70,26 @@ targets:
       testTargets:
         - FocusBarTests
       gatherCoverageData: false
+
+  # M6 privileged helper. Embedded in FocusBar.app and registered on demand
+  # through SMAppService when the user enables system-wide website blocking.
+  # Debug and Release share this daemon label; register only one copy at a time.
+  FocusBarHelper:
+    type: tool
+    platform: macOS
+    sources:
+      - path: FocusBarHelper
+        excludes:
+          - "*.plist"
+      - path: FocusBarShared
+    settings:
+      base:
+        PRODUCT_NAME: FocusBarHelper
+        PRODUCT_BUNDLE_IDENTIFIER: com.kanharithsok.FocusBar.helper
+        GENERATE_INFOPLIST_FILE: YES
+        CREATE_INFOPLIST_SECTION_IN_BINARY: YES
+        INFOPLIST_OUTPUT_FORMAT: binary
+        SKIP_INSTALL: YES
 
   FocusBarTests:
     type: bundle.unit-test

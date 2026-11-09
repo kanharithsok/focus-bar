@@ -5,9 +5,11 @@ import Foundation
 struct BlockingPlan: Equatable, Sendable {
     var appBlockingEnabled: Bool
     var websiteBlockingEnabled: Bool
+    var systemWebsiteBlockingEnabled: Bool
     var suspended: Bool
     var appCount: Int
     var domainCount: Int
+    var systemHostnameCount: Int
     var notes: [String]
 
     static func make(
@@ -33,6 +35,12 @@ struct BlockingPlan: Equatable, Sendable {
             && !domains.isEmpty
             && blockedPageAvailable
 
+        let systemHostnames = HostsBlocklistExpander.expand(domains: domains)
+        let systemEnabled = settings.systemWideWebsiteBlockingEnabled
+            && breakAllowsBlocking
+            && !suspended
+            && !systemHostnames.isEmpty
+
         var notes: [String] = []
         if preset == nil {
             notes.append("No blocklist preset selected.")
@@ -53,6 +61,9 @@ struct BlockingPlan: Equatable, Sendable {
         if suspended {
             notes.append("Blocking is suspended for this break.")
         }
+        if settings.systemWideWebsiteBlockingEnabled && domains.isEmpty {
+            notes.append("No websites are selected for system-wide blocking.")
+        }
         if settings.appBlockingAction == .requestTerminate {
             notes.append("Quit requests are best-effort; apps may refuse.")
         }
@@ -60,9 +71,11 @@ struct BlockingPlan: Equatable, Sendable {
         return BlockingPlan(
             appBlockingEnabled: appEnabled,
             websiteBlockingEnabled: websiteEnabled,
+            systemWebsiteBlockingEnabled: systemEnabled,
             suspended: suspended,
             appCount: apps.count,
             domainCount: domains.count,
+            systemHostnameCount: systemEnabled ? systemHostnames.count : 0,
             notes: notes
         )
     }
