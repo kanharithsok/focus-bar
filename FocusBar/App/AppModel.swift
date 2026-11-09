@@ -16,6 +16,7 @@ final class AppModel {
     let blockingEngine: BlockingEngine
     let capturePanel: CapturePanelController
     let notifications: NotificationService
+    let loginItem: LoginItemManager
 
     private(set) var startupWarning: String?
     private(set) var hasStarted = false
@@ -30,6 +31,7 @@ final class AppModel {
         let intentions = IntentionStore(persistence: persistence)
         let blockedAttempts = BlockedAttemptStore(persistence: persistence)
         let notifications = NotificationService()
+        let loginItem = LoginItemManager()
         let sessionManager = SessionManager(
             persistence: persistence,
             statsStore: stats,
@@ -50,6 +52,7 @@ final class AppModel {
         self.blockingEngine = blockingEngine
         self.capturePanel = CapturePanelController()
         self.notifications = notifications
+        self.loginItem = loginItem
 
         sessionManager.onSessionStarted = { [weak self] session in
             self?.beginBlocking(for: session)
@@ -82,6 +85,7 @@ final class AppModel {
         await intentions.load()
         await blockedAttempts.load()
         await sessionManager.restore()
+        loginItem.refresh()
 
         let issues = await persistence.consumeLoadIssues()
         startupWarning = issues.first

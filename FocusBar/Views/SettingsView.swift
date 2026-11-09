@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Combine
 import KeyboardShortcuts
 
 struct SettingsView: View {
@@ -18,6 +19,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                generalSection
                 sessionSection
                 blockingSection
                 presetsSection
@@ -29,9 +31,52 @@ struct SettingsView: View {
         }
         .frame(width: 580, height: 660)
         .background(WindowFocusView())
+        .onAppear { app.loginItem.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            app.loginItem.refresh()
+        }
         .sheet(item: $editingPreset) { preset in
             BlocklistEditorView(preset: preset)
                 .environment(app)
+        }
+    }
+
+    private var generalSection: some View {
+        SettingsSection(title: "General") {
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle("Start FocusBar at login", isOn: loginItemBinding)
+
+                if let error = app.loginItem.lastError {
+                    Text(error)
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if app.loginItem.requiresApproval {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("macOS needs your approval in System Settings > General > Login Items.")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 8)
+                        Button("Open Login Items") {
+                            app.loginItem.openLoginItemsSettings()
+                        }
+                        .font(.caption)
+                    }
+                } else if app.loginItem.isUnavailable {
+                    Text("macOS couldn't find this build as a login item. Move FocusBar to Applications, then try again.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text("Stays in the menu bar after you log in and restores any active session.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
     }
 
@@ -180,7 +225,7 @@ struct SettingsView: View {
                 }
                 .font(.caption)
 
-                Text("The default preset includes the social services in the brief. YouTube is included but disabled by default.")
+                Text("The default preset includes common social services. YouTube is included but disabled by default.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -227,11 +272,11 @@ struct SettingsView: View {
     }
 
     private var aboutSection: some View {
-        SettingsSection(title: "About v1") {
+        SettingsSection(title: "About") {
             VStack(alignment: .leading, spacing: 5) {
                 Text("FocusBar 1.0 · macOS 14+")
                     .font(.caption)
-                Text("Hyperfocus and Scatterfocus are attention tools, not enforcement software. App blocking is in-process and stops if FocusBar is force-quit. Browser protection is an active-tab guard for Safari and Chrome. System-wide hosts-file blocking is not part of v1.")
+                Text("Local-first attention management. Blocking is best effort; FocusBar never force-quits apps or closes browser tabs.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -255,6 +300,13 @@ struct SettingsView: View {
                     await app.settings.update { $0[keyPath: keyPath] = newValue }
                 }
             }
+        )
+    }
+
+    private var loginItemBinding: Binding<Bool> {
+        Binding(
+            get: { app.loginItem.isEnabled },
+            set: { app.loginItem.setEnabled($0) }
         )
     }
 }

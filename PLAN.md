@@ -172,6 +172,7 @@ Design notes:
 - **YouTube is present but disabled** in the default social-media preset.
 - **No notifications request at launch**; permission is requested when the first session starts if notifications are enabled.
 - **App is local-first**: no network code, no analytics, no accounts.
+- **Start at login** uses `SMAppService.mainApp` and is user-toggleable in Settings; it does not add a helper, daemon, or privileged component.
 
 ## 5. Technical risks and limitations
 
@@ -224,5 +225,6 @@ Automated coverage includes:
   3. Test app hide / terminate-request behavior with a selected app.
   4. Verify the global capture shortcut and panel feel.
   5. Confirm notification permission behavior.
+  6. Register FocusBar as a login item and verify it launches after logging out and back in.
 - M6 requires explicit approval and is not started.
 - Optional macOS Focus/Shortcuts integration is not implemented; it was marked optional in the brief.

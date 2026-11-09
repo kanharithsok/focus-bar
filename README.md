@@ -17,6 +17,7 @@ FocusBar is local-first. There are no accounts, analytics, telemetry, cloud sync
 ## Features (v1, M1–M5)
 
 - Menu-bar-only app (`LSUIElement`) with a compact popover.
+- Optional **Start at login** via macOS Login Items, using `SMAppService`; no helper or login-item daemon.
 - Hyperfocus sessions: 25, 50, 90 minutes, or a custom duration; one specific focus object; optional daily-intention link.
 - Absolute end-date timer: sleep, wake, and relaunch are handled by recomputing from the saved end time.
 - Explicit session state machine with invalid-transition rejection.
@@ -130,6 +131,7 @@ These cannot be fully validated by the automated test suite:
 3. Verify app hide / normal-quit-request behavior with selected applications.
 4. Verify the global capture shortcut and panel focus feel.
 5. Confirm notifications appear (or are gracefully denied).
+6. Toggle **Start at login** and verify FocusBar relaunches after logging out and back in.
 
 ## Not in v1
 

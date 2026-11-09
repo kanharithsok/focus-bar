@@ -48,6 +48,7 @@
 		AE7125E37A919AC89A672ECA /* BlocklistEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34C196FDB6EF7B63F009F1B /* BlocklistEditorView.swift */; };
 		B142777D5F3628EE007ED93A /* HostnameMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8E8F59C4AB1D82B9B147D43 /* HostnameMatcher.swift */; };
 		B1755631D7C3D5864E5494D6 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 29A8FAB5B1C171A525A408CF /* AppIcon.icon */; };
+		B246191BE00A79A6A642FDCD /* LoginItemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12A1C918A205EB4570FC6022 /* LoginItemManager.swift */; };
 		B98A14FA4999E0CADA682228 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1619CB0754EE465F701C8290 /* SessionManager.swift */; };
 		BDFB5414513C74DBDA4627BF /* CaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6976686C569F4FF2CE2CB48E /* CaptureStore.swift */; };
 		BF4A1A90CA3831183C93E264 /* BlockingStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4D2C7570A7EC8E144E2CBA8 /* BlockingStatusView.swift */; };
@@ -79,6 +80,7 @@
 		03284EBA27DA8837AE61CC67 /* CapturePad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturePad.swift; sourceTree = "<group>"; };
 		03566324D09FA13BED5BC253 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		05B8C575F7355BF0316E4FEA /* BrowserBlocker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserBlocker.swift; sourceTree = "<group>"; };
+		12A1C918A205EB4570FC6022 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
 		14B519460626A44EF36B5D80 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		1619CB0754EE465F701C8290 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
 		1AFE157BD3862EB22834C634 /* GlobalShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalShortcut.swift; sourceTree = "<group>"; };
@@ -173,6 +175,7 @@
 				6976686C569F4FF2CE2CB48E /* CaptureStore.swift */,
 				1AFE157BD3862EB22834C634 /* GlobalShortcut.swift */,
 				BC2D26AB00D85C6B1F565AD5 /* IntentionStore.swift */,
+				12A1C918A205EB4570FC6022 /* LoginItemManager.swift */,
 				B12A8D0A6D766CD3808CAAC5 /* NotificationService.swift */,
 				239EBA8FE54AFDA3F808EF63 /* PersistenceController.swift */,
 				1619CB0754EE465F701C8290 /* SessionManager.swift */,
@@ -409,6 +412,7 @@
 				C247BD7A58F1DB231BD50B1F /* IdleView.swift in Sources */,
 				97420B96118865A6D349C4DF /* IntentionStore.swift in Sources */,
 				27C99FF40433C5AE27ED7BB6 /* IntentionsCard.swift in Sources */,
+				B246191BE00A79A6A642FDCD /* LoginItemManager.swift in Sources */,
 				934D23659F9054F1B39738B7 /* MenuBarLabel.swift in Sources */,
 				D574E6AF5EC58145543B1D2E /* NotificationService.swift in Sources */,
 				33AB2C0FC3E4E60AB0D38287 /* PersistenceController.swift in Sources */,
