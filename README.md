@@ -143,4 +143,4 @@ These cannot be fully validated by the automated test suite:
 
 ## License
 
-No license has been chosen for this repository yet.
+MIT — see [LICENSE](LICENSE).

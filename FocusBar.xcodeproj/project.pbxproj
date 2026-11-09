@@ -599,7 +599,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "FocusBar uses Apple Events only to inspect the active tab in Safari or Google Chrome when browser protection is enabled. It does not read page content.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Kanharith Sok. All rights reserved.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Kanharith Sok";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -640,7 +640,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "FocusBar uses Apple Events only to inspect the active tab in Safari or Google Chrome when browser protection is enabled. It does not read page content.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Kanharith Sok. All rights reserved.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Kanharith Sok";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
