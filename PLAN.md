@@ -17,7 +17,7 @@
 
 The brief forbids manually editing `project.pbxproj` and regenerating an existing project. Since no project existed, the only viable path was to create one. `project.yml` is the source of truth and `FocusBar.xcodeproj` is generated with XcodeGen. XcodeGen is a local development tool, not a shipped dependency. The generated project is committed so contributors without XcodeGen can open it, but project-file changes must go through `project.yml` + `xcodegen generate`, never hand-edited `project.pbxproj`.
 
-Target: `FocusBar` (macOS app, deployment target 14.0), test target `FocusBarTests`.
+Targets: `FocusBar` (macOS app, deployment target 14.0), `FocusBarHelper` (privileged tool target), and `FocusBarTests`.
 
 ## 2. Architecture
 
@@ -26,10 +26,13 @@ SwiftUI Views
     ↓ @Environment / @Bindable
 AppModel (composition root) + @Observable stores & managers
     ↓
-Services: SessionManager, BlockingEngine, CaptureStore, StatsStore,
-          IntentionStore, SettingsStore, BlockedAttemptStore
+Services: SessionManager, BlockingEngine, SystemBlockingService,
+          SystemBlockingClient, MozillaBrowserRestarter, CaptureStore,
+          StatsStore, IntentionStore, SettingsStore, BlockedAttemptStore
     ↓
 PersistenceController (actor, versioned JSON, atomic writes)
+    ⇅ XPC
+FocusBarHelper (signed LaunchDaemon, marked /etc/hosts section)
 ```
 
 - `SessionManager`: explicit state machine (`idle`, `hyperfocus`, `scatterfocus`, `review`), absolute end dates, timer recalculation after wake/relaunch, early-end and review flow.
@@ -46,7 +49,7 @@ PersistenceController (actor, versioned JSON, atomic writes)
 
 | File | Payload |
 | --- | --- |
-| `settings.json` | `AppSettings` (commit mode, blocklists/presets, blocking switches, notifications) |
+| `settings.json` | `AppSettings` (commit mode, blocklists/presets, app/browser/system blocking switches, Zen/Firefox restart, notifications) |
 | `sessions.json` | `[SessionRecord]` history |
 | `activeSession.json` | active session and pending-review ID |
 | `captures.json` | `[Capture]` distractions and Scatterfocus notes |
@@ -113,7 +116,7 @@ Acceptance:
 
 ### M4 — Best-effort app and browser blocking
 
-Status: **implemented; unit-tested where headless testing is possible; live macOS permission/browser verification pending**
+Status: **implemented; Safari/Chrome Automation permission and redirects verified; app hiding/termination checks remain manual**
 
 - `Blocker` protocol + `BlockingEngine`; independent app and browser blockers.
 - Editable presets, service catalog (YouTube off by default), app picker resolving bundle IDs.
@@ -121,7 +124,7 @@ Status: **implemented; unit-tested where headless testing is possible; live macO
 - Safari + Chrome active-tab AppleScript checks off the main thread with timeouts; immediate check on activation + ~1 s polling only while supported browser is foreground.
 - Bundled generic blocked page; no URL paths/queries stored; hostname-only attempt records.
 - Permission explanation, denied/timeout handling, redirect-failure notification, duplicate-attempt suppression.
-- Other browsers intentionally not added yet.
+- The friendly active-tab guard remains Safari + Chrome only. Other browsers are covered only by the opt-in system-wide hosts block.
 
 Acceptance:
 - [x] Selected apps detected during sessions (logic).
@@ -130,7 +133,7 @@ Acceptance:
 - [x] Permission denial handled without crash.
 - [x] No tab closing on redirect failure.
 - [x] Polling dedup logic tested.
-- [ ] Manual: grant Automation permission and verify Safari/Chrome redirects.
+- [x] Manual: grant Automation permission and verify Safari/Chrome redirects.
 - [ ] Manual: verify app hiding/termination requests with real apps.
 
 ### M5 — Statistics and polish
@@ -146,11 +149,11 @@ Acceptance:
 - [x] Statistics derived from saved records.
 - [x] Data correct after relaunch (persistence tests).
 - [x] No streak/guilt features.
-- [x] M1–M5 integrated; build + tests pass.
+- [x] M1–M5 integrated; build + tests pass (M6 added separately).
 
 ### M6 — System-wide website blocking
 
-Status: **implemented, opt-in; automated tests and local macOS 27.2 helper/hosts verification pass; cross-browser manual check remains**
+Status: **implemented, opt-in; automated tests and local macOS 27.2 Safari/Chrome/Brave/Zen verification pass. Firefox/Arc were not installed; full reboot cleanup remains manual.**
 
 - Embedded, signed `FocusBarHelper` LaunchDaemon registered on demand with `SMAppService`; the app must be signed by the same team and installed in `/Applications`.
 - `SystemBlockingService` owns registration/approval state. `SystemBlockingClient` owns XPC, the heartbeat task, and live session status.
@@ -173,7 +176,7 @@ Acceptance:
 - [x] Manual: Safari, Chrome, Brave, and Zen (Firefox-based) blocked new navigations during a real session; Firefox/Arc were not installed on this machine.
 - [x] Manual: session-end cleanup removed the hosts block; Safari loaded YouTube and normal DNS returned after the session.
 - [x] Manual: opt-in Zen restart worked at session start/restore and session end. After the start restart, a normal Zen tab showed the cached YouTube shell as offline with no content; after the end restart, a normal Zen tab loaded the full YouTube homepage without a hard reload.
-- [ ] Manual: force-quit lease cleanup and reboot cleanup on a real desktop session.
+- [ ] Manual: force-quit FocusBar during a real app session and verify lease cleanup; reboot and verify stale-block cleanup.
 
 ## 4. Key decisions and assumptions
 
@@ -191,7 +194,7 @@ Acceptance:
 - **M6 leases are fail-open.** A 30-second lease with an 8-second heartbeat means a crashed/force-quit app cannot leave a permanent block. The helper also clears stale sections on launch/reboot.
 - **M6 requires a signed app in `/Applications`.** Ad-hoc builds are fine for tests but cannot register a usable daemon. The helper's XPC listener validates callers by code-signing requirement.
 - **M6 hosts has no wildcards.** Presets are expanded to common exact hostnames; uncommon subdomains remain out of scope. VPN/encrypted DNS/cached DNS/IP-literal limitations are surfaced in the UI and README.
-- **Browser support is Safari + Chrome only** until other browsers are individually tested.
+- **The friendly active-tab guard is Safari + Chrome only.** The opt-in system-wide hosts block covers other browsers at the name-resolution level, with the documented cache/VPN/DoH limitations.
 - **YouTube is present but disabled** in the default social-media preset.
 - **No notifications request at launch**; permission is requested when the first session starts if notifications are enabled.
 - **App is local-first**: no network code, no analytics, no accounts.
@@ -226,6 +229,12 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBar -configuration Release \
   -destination 'platform=macOS' build \
   CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Automatic \
   CODE_SIGN_IDENTITY="Apple Development" DEVELOPMENT_TEAM=YOUR_TEAM_ID
+
+# Signed UI smoke test for the menu-bar popover.
+xcodebuild -project FocusBar.xcodeproj -scheme FocusBarUITests \
+  -destination 'platform=macOS' test \
+  CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Automatic \
+  CODE_SIGN_IDENTITY="Apple Development" DEVELOPMENT_TEAM=YOUR_TEAM_ID
 ```
 
 ## 7. Verification log
@@ -245,7 +254,7 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBar -configuration Release \
 | 2026-11-09 | Lease expiry | block removed after 30 s without heartbeat |
 | 2026-11-09 | Helper reinstall cleanup | stale marked section removed on helper relaunch |
 | 2026-11-09 | Unregister/SIGTERM cleanup | active marked section removed immediately when the daemon was unregistered |
-| 2026-11-09 | Session integration | active session reported 45 expanded hostnames; mid-session disable removed the block, re-enable restored it, session end removed it |
+| 2026-11-09 | Session integration | active session reported 45 expanded hostnames before YouTube was enabled locally; mid-session disable removed the block, re-enable restored it, session end removed it |
 | 2026-11-09 | XPC caller validation | unsigned/teamless client rejected by the helper |
 | 2026-11-09 | Safari real-browser test | `example.com` loaded as control; `youtube.com`, `www.youtube.com`, and `x.com` redirected to the bundled blocked page during a session; `youtube.com` loaded normally after session end |
 | 2026-11-09 | Chrome real-browser test | `example.com` loaded as control; `youtube.com` redirected to the blocked page; headless Chrome returned `ERR_CONNECTION_REFUSED` for `youtube.com`, `www.youtube.com`, and `youtu.be` |
@@ -253,6 +262,7 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBar -configuration Release \
 | 2026-11-09 | Zen real-browser test | During an active 57-hostname block, a new normal-window tab loaded the full YouTube homepage from Zen’s cached DNS/connection pool; a fresh private window showed “Unable to connect — Zen can’t connect to the server at www.youtube.com.” Confirms browser cache/connection reuse, not a hosts bypass |
 | 2026-11-09 | Session-end cleanup | 57-hostname block removed automatically at the planned session end; DNS returned to public addresses and `curl https://youtube.com` returned HTTP 301 |
 | 2026-11-09 | Zen restart setting | After app restore with an active session, Zen’s PID changed (quit/reopen) and a normal tab showed the cached YouTube shell as offline; at session end Zen restarted again and a normal tab loaded the full YouTube homepage without a hard reload |
+| 2026-11-09 | Menu-bar UI smoke test | `FocusBarUITests` launched the app with temporary data, clicked the status item, asserted the idle popover labels/buttons, and attached a screenshot |
 
 Automated coverage includes:
 - session transitions, validation, expiration, sleep/relaunch-style clock jumps;
@@ -268,13 +278,13 @@ Automated coverage includes:
 ## 8. Current state / next actions
 
 - v1 feature set implemented (M1–M6); M6 is opt-in from Settings.
-- Automated build and unit tests pass in this environment; helper registration, hosts apply/remove, lease expiry, reinstall cleanup, and live session toggling were verified locally on macOS 27.2. See the verification log above.
-- Remaining work is manual, permission-dependent verification:
-  1. Launch the app, verify menu-bar-only behavior and popover layout.
-  2. Grant Automation access and test Safari/Chrome active-tab redirect.
-  3. Test app hide / terminate-request behavior with a selected app.
-  4. Verify the global capture shortcut and panel feel.
-  5. Confirm notification permission behavior.
-  6. Register FocusBar as a login item and verify it launches after logging out and back in.
-  7. Enable system-wide blocking and verify blocked domains in Safari, Chrome, and Brave (verified locally); verify Firefox/Arc if installed; force-quit FocusBar and confirm lease cleanup; reboot and confirm stale-block cleanup.
+- Automated build and unit tests pass in this environment, along with the signed `FocusBarUITests` menu-bar smoke test. Already verified locally on macOS 27.2: Safari/Chrome Automation redirects; Safari/Chrome/Brave/Zen system-wide blocking; helper registration, hosts apply/remove, lease expiry, and reinstall cleanup; Zen restart at session start/end. See the verification log above.
+- Remaining manual, permission-dependent verification:
+  1. Visually inspect the menu-bar-only behavior and popover layout on a real desktop (`FocusBarUITests` covers the layout smoke test).
+  2. Verify app hide / normal-quit-request behavior with selected applications.
+  3. Verify the global capture shortcut and panel focus.
+  4. Confirm notification permission/display.
+  5. Register FocusBar as a login item and verify launch after logout/login.
+  6. Verify Firefox/Arc if installed.
+  7. Force-quit FocusBar during a real app session and verify lease cleanup; reboot and verify stale-block cleanup.
 - Optional macOS Focus/Shortcuts integration is not implemented; it was marked optional in the brief.

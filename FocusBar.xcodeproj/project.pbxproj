@@ -10,6 +10,7 @@
 		01C27CD9157932EED0550E04 /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A7F3A0CCD9369B5EA78272 /* TestSupport.swift */; };
 		08EF10F33B641CD4ECFFBC20 /* Capture.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9BF6CE4529F338C13F0C2D9 /* Capture.swift */; };
 		0C1A23E84FE467D50D0EE756 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC064DE485530F4C599FD2AD /* AppSettings.swift */; };
+		0C574D212A7C403171E8E649 /* MenuBarLayoutUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69834B70E16033192CFAEF76 /* MenuBarLayoutUITests.swift */; };
 		124ED59403EBF4314E252DE2 /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBBB7B775B866DF64B505B44 /* StatsView.swift */; };
 		12A512CA88CE8A9849E29B73 /* MozillaBrowserRestarter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0C66C0B67356E38E11B15DD /* MozillaBrowserRestarter.swift */; };
 		1ACCD027DA537CF6E5491546 /* BlocklistPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 573051A3E59577AD1DB2BD5C /* BlocklistPreset.swift */; };
@@ -89,6 +90,13 @@
 			remoteGlobalIDString = 604E3FF6B81F6C706E2E0EFE;
 			remoteInfo = FocusBarHelper;
 		};
+		A4EE0AB6161EF514613CA796 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 64E65DE23B9E5B15CBB7440E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0AAD70E2A2D3657CB9A708F7;
+			remoteInfo = FocusBar;
+		};
 		B9B1FFA26D27909846A2322E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 64E65DE23B9E5B15CBB7440E /* Project object */;
@@ -138,6 +146,7 @@
 		2AFF5B062F02CF1CF76E095E /* FocusBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusBarApp.swift; sourceTree = "<group>"; };
 		2B9891CB993AEFA460CFB1BF /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		2C7EF54F6E995189C7499FAA /* AppleScriptRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleScriptRunner.swift; sourceTree = "<group>"; };
+		33F672C8E3B8E58837624AB9 /* FocusBarUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FocusBarUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3956818D57E4CFF821B7443A /* StoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreTests.swift; sourceTree = "<group>"; };
 		3B96EBF6B128DF4DA8D3BE50 /* StatsCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsCalculatorTests.swift; sourceTree = "<group>"; };
 		3E011469E2880E341EA9E47E /* SessionRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRecord.swift; sourceTree = "<group>"; };
@@ -152,6 +161,7 @@
 		573051A3E59577AD1DB2BD5C /* BlocklistPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlocklistPreset.swift; sourceTree = "<group>"; };
 		5B4DCA6420CD7B85E124ECF3 /* blocked.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = blocked.html; sourceTree = "<group>"; };
 		6976686C569F4FF2CE2CB48E /* CaptureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureStore.swift; sourceTree = "<group>"; };
+		69834B70E16033192CFAEF76 /* MenuBarLayoutUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarLayoutUITests.swift; sourceTree = "<group>"; };
 		6C79DEFE7576D15A72B33EB2 /* StatsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsStore.swift; sourceTree = "<group>"; };
 		6CED937C59F4FF81F5C58012 /* CodeSigningInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSigningInfo.swift; sourceTree = "<group>"; };
 		6DEC29C04BFC4D648664247E /* AppBlocker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBlocker.swift; sourceTree = "<group>"; };
@@ -301,6 +311,7 @@
 				FF57DDD7913076206A80F8F3 /* FocusBarHelper */,
 				461CAC6C3346B46BE6B63683 /* FocusBarShared */,
 				77146EF602A5659101BFE298 /* FocusBarTests */,
+				F27088EBD55C6ACE76B4988E /* FocusBarUITests */,
 				96C87CE878F2E8D99C794811 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -311,6 +322,7 @@
 				80BC2270115B865B25BBE929 /* FocusBar.app */,
 				AF87BCEFF6D923676662F77D /* FocusBarHelper */,
 				46AC14AA4248D8D3B9EDA761 /* FocusBarTests.xctest */,
+				33F672C8E3B8E58837624AB9 /* FocusBarUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -360,6 +372,14 @@
 			path = FocusBar;
 			sourceTree = "<group>";
 		};
+		F27088EBD55C6ACE76B4988E /* FocusBarUITests */ = {
+			isa = PBXGroup;
+			children = (
+				69834B70E16033192CFAEF76 /* MenuBarLayoutUITests.swift */,
+			);
+			path = FocusBarUITests;
+			sourceTree = "<group>";
+		};
 		FF57DDD7913076206A80F8F3 /* FocusBarHelper */ = {
 			isa = PBXGroup;
 			children = (
@@ -396,6 +416,24 @@
 			productName = FocusBar;
 			productReference = 80BC2270115B865B25BBE929 /* FocusBar.app */;
 			productType = "com.apple.product-type.application";
+		};
+		2BAC720B6D1392BCC9C27342 /* FocusBarUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F43DC4BEABBE54479A5BE6E5 /* Build configuration list for PBXNativeTarget "FocusBarUITests" */;
+			buildPhases = (
+				073CA4C49803E32F0A8D14B4 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				988ADB1E159872C34D9C77A6 /* PBXTargetDependency */,
+			);
+			name = FocusBarUITests;
+			packageProductDependencies = (
+			);
+			productName = FocusBarUITests;
+			productReference = 33F672C8E3B8E58837624AB9 /* FocusBarUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 		5756474EC858B15B22704CAE /* FocusBarTests */ = {
 			isa = PBXNativeTarget;
@@ -445,6 +483,11 @@
 						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
+					2BAC720B6D1392BCC9C27342 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+						TestTargetID = 0AAD70E2A2D3657CB9A708F7;
+					};
 					5756474EC858B15B22704CAE = {
 						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
@@ -474,6 +517,7 @@
 			targets = (
 				0AAD70E2A2D3657CB9A708F7 /* FocusBar */,
 				604E3FF6B81F6C706E2E0EFE /* FocusBarHelper */,
+				2BAC720B6D1392BCC9C27342 /* FocusBarUITests */,
 				5756474EC858B15B22704CAE /* FocusBarTests */,
 			);
 		};
@@ -492,6 +536,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		073CA4C49803E32F0A8D14B4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0C574D212A7C403171E8E649 /* MenuBarLayoutUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		63FF8550568C7C5B738113D7 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -593,6 +645,11 @@
 			target = 604E3FF6B81F6C706E2E0EFE /* FocusBarHelper */;
 			targetProxy = 134159B37773B10853BDBC6B /* PBXContainerItemProxy */;
 		};
+		988ADB1E159872C34D9C77A6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0AAD70E2A2D3657CB9A708F7 /* FocusBar */;
+			targetProxy = A4EE0AB6161EF514613CA796 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -657,6 +714,23 @@
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
+		};
+		4B7DA65B63D1BA3ED7AFEE46 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kanharithsok.FocusBarUITests;
+				SDKROOT = macosx;
+				TEST_TARGET_NAME = FocusBar;
+			};
+			name = Debug;
 		};
 		534708366B2D1FAF726DCC1D /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -845,6 +919,23 @@
 			};
 			name = Release;
 		};
+		F6C84426A9B983F762731673 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kanharithsok.FocusBarUITests;
+				SDKROOT = macosx;
+				TEST_TARGET_NAME = FocusBar;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -871,6 +962,15 @@
 			buildConfigurations = (
 				9032E17C842293E864A33A54 /* Debug */,
 				534708366B2D1FAF726DCC1D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F43DC4BEABBE54479A5BE6E5 /* Build configuration list for PBXNativeTarget "FocusBarUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4B7DA65B63D1BA3ED7AFEE46 /* Debug */,
+				F6C84426A9B983F762731673 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

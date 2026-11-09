@@ -26,6 +26,12 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBar -configuration Debug \
   -destination 'platform=macOS' build CODE_SIGNING_ALLOWED=NO
 xcodebuild -project FocusBar.xcodeproj -scheme FocusBar \
   -destination 'platform=macOS' test CODE_SIGNING_ALLOWED=NO
+
+# Signed menu-bar/popover UI smoke test.
+xcodebuild -project FocusBar.xcodeproj -scheme FocusBarUITests \
+  -destination 'platform=macOS' test \
+  CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Automatic \
+  CODE_SIGN_IDENTITY="Apple Development" DEVELOPMENT_TEAM=YOUR_TEAM_ID
 ```
 
 ## Architecture rules
@@ -50,7 +56,8 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBar \
 - Unit tests use real persistence pointed at temp directories and an injectable clock; `automaticallyTicks: false` for deterministic session tests.
 - Run the full test command above before claiming success. Distinguish automated tests from manual macOS-permission/browser checks.
 - Hosts rendering/validation, lease/status logic, settings decoding, and blocking-plan decisions are unit-tested. The privileged daemon, XPC connection, `/etc/hosts` writes, registration approval, and cross-browser behavior require manual verification on a real desktop session.
-- Browser/app blocking, Apple Events permission, menu-bar rendering, and the global shortcut panel require manual verification on a real desktop session.
+- `FocusBarUITests` is the signed menu-bar/popover smoke test (launch with a temporary data dir, click the status item, assert key controls, attach a screenshot). It covers the layout structure; visual feel and real-app blocking still need desktop checks.
+- Browser/app blocking, Apple Events permission, menu-bar visual feel, and the global shortcut panel require manual verification on a real desktop session.
 
 ## Data and statistics
 

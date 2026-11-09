@@ -91,6 +91,22 @@ targets:
         INFOPLIST_OUTPUT_FORMAT: binary
         SKIP_INSTALL: YES
 
+  FocusBarUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: FocusBarUITests
+    dependencies:
+      - target: FocusBar
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kanharithsok.FocusBarUITests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: FocusBar
+    scheme:
+      testTargets:
+        - FocusBarUITests
+
   FocusBarTests:
     type: bundle.unit-test
     platform: macOS

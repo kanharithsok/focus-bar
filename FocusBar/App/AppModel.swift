@@ -27,7 +27,18 @@ final class AppModel {
     @ObservationIgnored private var wakeObserver: NSObjectProtocol?
 
     init() {
-        let persistence = PersistenceController()
+        let persistence: PersistenceController
+        #if DEBUG
+        if let testDirectory = ProcessInfo.processInfo.environment["FOCUSBAR_UI_TEST_DIR"] {
+            persistence = PersistenceController(
+                directory: URL(fileURLWithPath: testDirectory, isDirectory: true)
+            )
+        } else {
+            persistence = PersistenceController()
+        }
+        #else
+        persistence = PersistenceController()
+        #endif
         let settings = SettingsStore(persistence: persistence)
         let stats = StatsStore(persistence: persistence)
         let captures = CaptureStore(persistence: persistence)
