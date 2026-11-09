@@ -90,12 +90,12 @@ struct AccentButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.semibold))
-            .foregroundStyle(isEnabled ? Color.white : Color.secondary)
+            .foregroundStyle(isEnabled ? Color.white : Color.primary.opacity(0.5))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isEnabled ? fill : Color.primary.opacity(0.08))
+                    .fill(isEnabled ? fill : Color.primary.opacity(0.07))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -104,12 +104,11 @@ struct AccentButtonStyle: ButtonStyle {
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .strokeBorder(
-                        Color.white.opacity(isEnabled ? 0.16 : 0.06),
+                        Color.white.opacity(isEnabled ? 0.16 : 0.08),
                         lineWidth: 1
                     )
             )
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .opacity(isEnabled ? 1 : 0.7)
     }
 }
 

@@ -76,7 +76,7 @@ The focus object and remaining time stay visible in the popover, and the menu ba
 
 ### Scatterfocus
 
-Choose **Break** in the popover, pick Capture / Problem crunching / Habitual, set a length (10 minutes by default), and start. Habitual deliberately provides no scratchpad. Blocking continues by default; use **Keep blocking during this break** to suspend it explicitly for that break.
+Choose **Scatterfocus** in the popover, pick Capture / Problem crunching / Habitual, set a length (10 minutes by default), and start. Habitual deliberately provides no scratchpad. Blocking continues by default; use **Keep blocking during this break** to suspend it explicitly for that break.
 
 ### Capturing distractions
 

@@ -25,7 +25,7 @@ struct IdleView: View {
         var label: String {
             switch self {
             case .hyperfocus: return "Hyperfocus"
-            case .scatterfocus: return "Break"
+            case .scatterfocus: return "Scatterfocus"
             }
         }
     }
@@ -66,6 +66,16 @@ struct IdleView: View {
         !isStarting && (1...480).contains(scatterMinutes)
     }
 
+    private var startHyperfocusTitle: String {
+        if focusObject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Enter a focus to start"
+        }
+        if !(1...480).contains(minutes) {
+            return "Choose a valid duration"
+        }
+        return "Start Hyperfocus"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 3) {
@@ -85,6 +95,7 @@ struct IdleView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
+            .tint(mode == .hyperfocus ? .orange : .teal)
 
             if mode == .hyperfocus {
                 hyperfocusCard
@@ -127,6 +138,7 @@ struct IdleView: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                .tint(.orange)
 
                 if durationChoice == .custom {
                     HStack(spacing: 8) {
@@ -163,7 +175,7 @@ struct IdleView: View {
                         if isStarting {
                             ProgressView().controlSize(.small)
                         } else {
-                            Text("Start Hyperfocus")
+                            Text(startHyperfocusTitle)
                                 .fontWeight(.semibold)
                         }
                         Spacer()
