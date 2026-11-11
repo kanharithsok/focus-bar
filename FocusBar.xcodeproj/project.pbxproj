@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		01C27CD9157932EED0550E04 /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A7F3A0CCD9369B5EA78272 /* TestSupport.swift */; };
+		08EAFC2518920BF4C82EAD86 /* ScreenshotUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 992E212C10753287FB5E30F4 /* ScreenshotUITests.swift */; };
 		08EF10F33B641CD4ECFFBC20 /* Capture.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9BF6CE4529F338C13F0C2D9 /* Capture.swift */; };
 		0C1A23E84FE467D50D0EE756 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC064DE485530F4C599FD2AD /* AppSettings.swift */; };
 		0C574D212A7C403171E8E649 /* MenuBarLayoutUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69834B70E16033192CFAEF76 /* MenuBarLayoutUITests.swift */; };
@@ -181,6 +182,7 @@
 		938570C4938F393DD2B0723C /* ScatterfocusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScatterfocusView.swift; sourceTree = "<group>"; };
 		9779D4867C3BDD0994259DBE /* CaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureView.swift; sourceTree = "<group>"; };
 		98D9D89E42C6AA7EB3599ABC /* MenuBarLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarLabel.swift; sourceTree = "<group>"; };
+		992E212C10753287FB5E30F4 /* ScreenshotUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotUITests.swift; sourceTree = "<group>"; };
 		9CCCD8D2F2E0B269D717A442 /* SyncModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncModels.swift; sourceTree = "<group>"; };
 		A0F52E525F4B9E624E39F36A /* SystemBlockingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemBlockingService.swift; sourceTree = "<group>"; };
 		A1859151C37634780B1D637B /* SystemBlockingXPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemBlockingXPC.swift; sourceTree = "<group>"; };
@@ -399,6 +401,7 @@
 			isa = PBXGroup;
 			children = (
 				69834B70E16033192CFAEF76 /* MenuBarLayoutUITests.swift */,
+				992E212C10753287FB5E30F4 /* ScreenshotUITests.swift */,
 			);
 			path = FocusBarUITests;
 			sourceTree = "<group>";
@@ -564,6 +567,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0C574D212A7C403171E8E649 /* MenuBarLayoutUITests.swift in Sources */,
+				08EAFC2518920BF4C82EAD86 /* ScreenshotUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

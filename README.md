@@ -7,6 +7,28 @@ FocusBar is a native macOS menu-bar app for managing attention through two modes
 
 FocusBar is local-first. There are no accounts, analytics, telemetry, servers, or app-initiated network calls. Everything is stored on your Mac unless you explicitly enable the optional multi-Mac sync through a folder you choose, such as one in iCloud Drive.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/focusbar-idle.png" width="380" alt="FocusBar menu bar popover with Hyperfocus setup and today's intentions">
+</p>
+
+| Active Hyperfocus | Scatterfocus |
+| --- | --- |
+| ![Active Hyperfocus session](docs/screenshots/focusbar-hyperfocus.png) | ![Scatterfocus setup](docs/screenshots/focusbar-scatterfocus.png) |
+| **Focus timer, focus object, and best-effort protection.** | **Intentional breaks for capturing thoughts or letting the mind wander.** |
+
+| History and statistics | Settings |
+| --- | --- |
+| ![History and statistics](docs/screenshots/focusbar-history.png) | ![FocusBar settings](docs/screenshots/focusbar-settings.png) |
+| **Focus minutes, quality ratings, and blocked attempts.** | **Session, blocking, and privacy preferences.** |
+
+<p align="center">
+  <img src="docs/screenshots/focusbar-sync.png" width="570" alt="Optional Sync across Macs settings">
+</p>
+
+*Screenshots use sample data and follow the macOS appearance setting. Click an image to view it full size.*
+
 ## Requirements
 
 - macOS 14.0 or later
@@ -202,6 +224,16 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBarUITests \
   CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Automatic \
   CODE_SIGN_IDENTITY="Apple Development" DEVELOPMENT_TEAM=YOUR_TEAM_ID
 ```
+
+### README screenshots
+
+`ScreenshotUITests` launches FocusBar with a seeded temporary profile, captures the README images, and attaches cropped PNGs to the result bundle. Run it with the same signed configuration, adding:
+
+```sh
+-only-testing:FocusBarUITests/ScreenshotUITests/testCaptureReadmeScreenshots
+```
+
+Export the attachments with `xcrun xcresulttool export attachments --path <result>.xcresult --output-path <folder>`.
 
 ### Manual verification still required
 
