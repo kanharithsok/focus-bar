@@ -116,6 +116,102 @@ final class IntentionStoreTests: XCTestCase {
     }
 }
 
+@MainActor
+final class SyncStoreTests: XCTestCase {
+    func testCaptureDeleteRecordsTombstoneBeforeRemoval() async {
+        let env = TestEnvironment()
+        await env.loadAll()
+        defer { env.cleanup() }
+
+        let capture = await env.captures.add(text: "Delete me", sessionID: nil, source: .distraction)
+        let captureID = capture?.id
+        var deletedID: UUID?
+        env.captures.onDelete = { id in
+            deletedID = id
+        }
+
+        if let capture {
+            await env.captures.delete(capture)
+        }
+
+        XCTAssertEqual(deletedID, captureID)
+        XCTAssertTrue(env.captures.captures.isEmpty)
+    }
+
+    func testIntentionDeleteRecordsTombstoneBeforeRemoval() async throws {
+        let env = TestEnvironment()
+        await env.loadAll()
+        defer { env.cleanup() }
+
+        let intention = try await env.intentions.add(text: "Delete me", on: env.clock.now)
+        var deletedID: UUID?
+        env.intentions.onDelete = { id in
+            deletedID = id
+        }
+
+        await env.intentions.delete(intention)
+
+        XCTAssertEqual(deletedID, intention.id)
+        XCTAssertTrue(env.intentions.intentions.isEmpty)
+    }
+
+    func testSharedSettingsTimestampOnlyMovesForSharedFields() async {
+        let env = TestEnvironment()
+        await env.loadAll()
+        defer { env.cleanup() }
+
+        XCTAssertNil(env.settings.settings.sharedSettingsUpdatedAt)
+
+        await env.settings.update { $0.systemWideWebsiteBlockingEnabled = true }
+        XCTAssertNil(env.settings.settings.sharedSettingsUpdatedAt)
+
+        env.clock.now = env.clock.now.addingTimeInterval(120)
+        await env.settings.update { $0.commitMode = true }
+        XCTAssertEqual(env.settings.settings.sharedSettingsUpdatedAt, env.clock.now)
+    }
+
+    func testApplyingSharedSettingsKeepsDeviceSpecificValues() async {
+        let env = TestEnvironment()
+        await env.loadAll()
+        defer { env.cleanup() }
+
+        await env.settings.update {
+            $0.systemWideWebsiteBlockingEnabled = true
+            $0.restartMozillaBrowsersOnSessionChange = true
+        }
+
+        var remote = AppSettings.defaults()
+        remote.commitMode = true
+        remote.sharedSettingsUpdatedAt = env.clock.now.addingTimeInterval(60)
+        await env.settings.applySharedSettings(SharedSettingsSnapshot(settings: remote))
+
+        XCTAssertTrue(env.settings.settings.commitMode)
+        XCTAssertTrue(env.settings.settings.systemWideWebsiteBlockingEnabled)
+        XCTAssertTrue(env.settings.settings.restartMozillaBrowsersOnSessionChange)
+    }
+
+    func testStatsUpsertMarksRecordUpdated() async {
+        let env = TestEnvironment()
+        await env.loadAll()
+        defer { env.cleanup() }
+
+        let record = makeRecord(startDate: env.clock.now)
+        await env.stats.upsert(record)
+
+        XCTAssertNotNil(env.stats.sessions.first?.updatedAt)
+    }
+
+    func testLegacySettingsWithoutSyncFieldsDecode() throws {
+        let data = Data("{}".utf8)
+        let settings = try JSONDecoder().decode(AppSettings.self, from: data)
+
+        XCTAssertFalse(settings.syncEnabled)
+        XCTAssertNil(settings.syncFolderPath)
+        XCTAssertNil(settings.syncFolderBookmark)
+        XCTAssertNil(settings.sharedSettingsUpdatedAt)
+    }
+}
+
 final class BlocklistDefaultsTests: XCTestCase {
     func testDefaultPresetContainsRequiredServicesExceptYouTube() {
         let preset = BlocklistPreset.socialMediaDefault()

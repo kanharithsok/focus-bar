@@ -9,6 +9,8 @@ final class IntentionStore {
     private(set) var lastError: String?
 
     @ObservationIgnored private let persistence: PersistenceController
+    @ObservationIgnored var onLocalChange: (() -> Void)?
+    @ObservationIgnored var onDelete: ((UUID) async -> Void)?
 
     init(persistence: PersistenceController) {
         self.persistence = persistence
@@ -53,8 +55,28 @@ final class IntentionStore {
     }
 
     func delete(_ intention: DailyIntention) async {
+        await onDelete?(intention.id)
         intentions.removeAll { $0.id == intention.id }
         await persist()
+    }
+
+    /// Replaces intentions with the merged multi-Mac result without triggering
+    /// a new local-change sync.
+    func applySynced(intentions newIntentions: [DailyIntention], skippedDays newSkippedDays: Set<Date>) async {
+        let sorted = newIntentions.sorted { $0.createdAt < $1.createdAt }
+        guard sorted != intentions || newSkippedDays != skippedDays else { return }
+        intentions = sorted
+        skippedDays = newSkippedDays
+        do {
+            let file = IntentionFile(
+                intentions: intentions,
+                skippedDays: skippedDays.sorted()
+            )
+            try await persistence.save(file, to: "intentions.json")
+            lastError = nil
+        } catch {
+            lastError = "Couldn't save intentions: \(error.localizedDescription)"
+        }
     }
 
     func skipPrompt(for day: Date, calendar: Calendar = .current) async {
@@ -78,6 +100,7 @@ final class IntentionStore {
             )
             try await persistence.save(file, to: "intentions.json")
             lastError = nil
+            onLocalChange?()
         } catch {
             lastError = "Couldn't save intentions: \(error.localizedDescription)"
         }

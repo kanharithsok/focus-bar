@@ -38,7 +38,7 @@ struct CaptureView: View {
                 .onSubmit(save)
 
             HStack {
-                Text("Saved locally. Linked to the active session when there is one.")
+                Text("Saved locally. Synced only if you enable sync. Linked to the active session when there is one.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 Spacer()

@@ -45,7 +45,7 @@ struct StatsView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("History")
                         .font(.title3.weight(.semibold))
-                    Text("Sessions, focus time, and blocked attempts · local only")
+                    Text("Sessions, focus time, and blocked attempts · stored locally · sync optional")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

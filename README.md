@@ -5,7 +5,7 @@ FocusBar is a native macOS menu-bar app for managing attention through two modes
 - **Hyperfocus** — one specific focus object, a fixed time block, and best-effort distraction blocking.
 - **Scatterfocus** — an intentional break for capturing thoughts, crunching a problem, or doing something low-demand so the mind can wander.
 
-FocusBar is local-first. There are no accounts, analytics, telemetry, cloud sync, or network calls. Everything is stored on your Mac.
+FocusBar is local-first. There are no accounts, analytics, telemetry, servers, or app-initiated network calls. Everything is stored on your Mac unless you explicitly enable the optional multi-Mac sync through a folder you choose, such as one in iCloud Drive.
 
 ## Requirements
 
@@ -13,8 +13,9 @@ FocusBar is local-first. There are no accounts, analytics, telemetry, cloud sync
 - Apple Silicon (the project builds arm64; universal builds are possible)
 - Xcode 16 or later to build (verified with Xcode 27.2)
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) 2.46+ only if you want to regenerate the Xcode project
+- Optional multi-Mac sync: iCloud Drive (or another synced folder) and the same Apple Account on both Macs. No paid Apple Developer Program membership is needed for folder-based sync.
 
-## Features (v1, M1–M6)
+## Features (v1, M1–M7)
 
 - Menu-bar-only app (`LSUIElement`) with a compact popover.
 - Optional **Start at login** via macOS Login Items, using `SMAppService`. The system-wide blocking helper is a separate opt-in component.
@@ -35,6 +36,7 @@ FocusBar is local-first. There are no accounts, analytics, telemetry, cloud sync
 - Optional **Zen/Firefox restart** at session start and end: clears those browsers' cached DNS and connections so the system-wide block takes effect immediately and stale blocked pages clear afterward. FocusBar only sends a normal quit request and reopens the browser; tabs may not restore, so save your work first.
 - Statistics derived from saved session history: today/week focus minutes, 7-day chart, average focus quality, blocked-attempt counts, and session history grouped by day. Select a session to see its full notes, intentions, and captures.
 - Corrupt or missing JSON is handled gracefully; corrupt files are quarantined, not silently overwritten.
+- Optional **multi-Mac sync** through a folder you choose, such as `iCloud Drive/FocusBar`. Each Mac writes its own small JSON snapshot; sessions, captures, intentions, blocked-attempt history, and shared settings merge automatically. Active sessions and device-specific settings stay local. No FocusBar account or server is involved.
 
 ## Install and run
 
@@ -67,7 +69,7 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBar \
   -destination 'platform=macOS' test
 ```
 
-The project is set up for ad-hoc local signing. If macOS keeps re-prompting for Automation permission after rebuilds, sign with a stable local Development identity instead of changing ad-hoc signatures.
+The project is set up for ad-hoc local signing. If macOS keeps re-prompting for Automation permission or sync-folder access after rebuilds, sign with a stable local Development identity instead of changing ad-hoc signatures.
 
 System-wide website blocking is the one exception: the embedded LaunchDaemon must be signed with the same team as the app and the app must live in `/Applications` for `SMAppService` to register it. For local use, sign with your Apple Development or Developer ID identity:
 
@@ -112,22 +114,43 @@ Choose **Scatterfocus** in the popover, pick Capture / Problem crunching / Habit
 
 Press `⌃⌥Space` (default) anywhere. Type one line and press Return. The capture is saved locally and associated with the active session when one exists. Change the shortcut in **Settings → Global shortcut**.
 
+### Syncing across Macs (optional)
+
+1. Make sure iCloud Drive is enabled on both Macs and both are signed into the same Apple Account.
+2. Open **Settings → Sync across Macs**.
+3. Turn on **Sync through a shared folder** and choose or create `iCloud Drive/FocusBar`.
+4. On the second Mac, do the same and choose the same folder.
+
+FocusBar writes one small JSON snapshot per Mac into the folder. Each Mac reads the other snapshots, merges records by their UUID, and writes its own snapshot. The two Macs never write the same file, so one Mac cannot overwrite the other's history.
+
+- **Synced:** session history and reviews, captures, daily intentions, blocked-attempt history, blocklist presets, and shared session/blocking preferences.
+- **Not synced:** the active session, the system-wide helper toggle, the Zen/Firefox restart setting, notification permission, start-at-login, and the sync folder configuration itself.
+- **Deletions:** deleting a capture or intention records a tombstone, so it does not reappear from the other Mac.
+- **Conflicts:** if the same session review or shared setting changes on both Macs before they sync, the newest timestamp wins. FocusBar does not show a merge/conflict dialog.
+- **Scheduling:** FocusBar syncs at launch, after local changes (debounced), when the app becomes active or wakes, and about once a minute while running.
+
+Sync is eventually consistent. iCloud Drive may take a few seconds or minutes, and a Mac that is offline keeps its local data and catches up later. If iCloud storage is full or iCloud Drive is disabled, local use continues and the sync error is shown in Settings. The snapshots count against your existing iCloud storage; FocusBar data is only a few megabytes, so the free 5 GB is normally enough.
+
+This is folder-based sync, not CloudKit. It works with a free Apple Developer account and any synced folder. True CloudKit/iCloud-container sync would require the paid Apple Developer Program.
+
 ## Permissions
 
 - **Automation (Apple Events)** is needed only when browser protection inspects Safari or Chrome's active tab. FocusBar explains this before asking. If denied, enable FocusBar under **System Settings → Privacy & Security → Automation**. Denial never crashes the app or pretends protection is working.
 - **Notifications** are optional. FocusBar asks the first time a session starts if notifications are enabled. Blocking works without them.
 - App hiding uses `NSWorkspace` and needs no special permission.
+- **Optional sync** asks you to choose the folder with the standard macOS folder picker. macOS may ask you to confirm access to that folder. FocusBar does not need Full Disk Access.
 - **System-wide website blocking** installs a signed LaunchDaemon through `SMAppService`; macOS may ask you to approve it under **System Settings → General → Login Items & Extensions**. The helper runs as root only to update the marked `/etc/hosts` section and flush DNS. It does not use Full Disk Access, Accessibility, or Screen Recording.
 - FocusBar does **not** use Screen Recording, Accessibility, or Full Disk Access.
 
 ## Privacy
 
-- Data lives in `~/Library/Application Support/FocusBar/`.
-- Session history, captures, intentions, settings, and blocked-attempt history are JSON files with a versioned envelope and atomic writes.
+- Data lives in `~/Library/Application Support/FocusBar/`. If you enable sync, the shared snapshots live only in the folder you choose.
+- Session history, captures, intentions, settings, blocked-attempt history, and sync bookkeeping are JSON files with a versioned envelope and atomic writes.
 - Browser checks inspect only the active tab's URL. FocusBar stores only the hostname, browser identifier, session ID, and timestamp for a blocked attempt. It does not store full URLs, paths, query strings, or page content.
 - The focus object is never placed in a URL or browser history. The blocked page is generic and local.
 - The system-wide helper only writes the hostnames already in your selected preset. It does not read page content, browse history, or inspect network traffic.
-- No network code, accounts, analytics, telemetry, or cloud sync.
+- **Optional sync:** no FocusBar account, server, analytics, telemetry, or app-initiated network request is involved. If you enable sync, FocusBar writes the JSON snapshots described above into the folder you chose. Your folder provider (for example iCloud Drive) uploads them under its own terms. The snapshots include session text, captures, intentions, shared settings, blocked hostnames, and bundle IDs. They are not end-to-end encrypted by FocusBar; use a provider or iCloud Advanced Data Protection if you need that.
+- Without sync enabled, the sync code does nothing and no data leaves your Mac.
 
 ## Blocking limitations
 
@@ -151,6 +174,8 @@ Blocking is **best effort**, never guaranteed:
 
 If FocusBar was already deleted, remove its background item under **System Settings → General → Login Items & Extensions**. The helper never leaves a permanent `/etc/hosts` block: if it loses the app, the lease expires after 30 seconds and clears the marked section; a clean helper unregister also removes it immediately. A browser may still show a cached offline/error page until it is reloaded or restarted.
 
+Uninstalling FocusBar does not delete the optional sync folder. If you enabled sync and want to remove the synced copies, delete the shared `FocusBar` folder (for example in iCloud Drive) after removing the app. Other Macs keep their local data.
+
 If you move FocusBar after installing the helper, choose **Remove helper** and then **Install helper** again so the LaunchDaemon points at the new app location.
 
 ## Data recovery
@@ -160,10 +185,11 @@ If a JSON file is unreadable, FocusBar moves it aside as `filename.corrupt-<time
 ## Development
 
 - `project.yml` is the source of truth. `FocusBar.xcodeproj` is generated by XcodeGen. Do not hand-edit `project.pbxproj`.
-- Architecture: SwiftUI views → `AppModel` / `@Observable` stores → services (`SessionManager`, `BlockingEngine`, `SystemBlockingService` / `SystemBlockingClient`, `MozillaBrowserRestarter`, `CaptureStore`, `StatsStore`, `IntentionStore`, `SettingsStore`, `BlockedAttemptStore`). The privileged side is the separate `FocusBarHelper` target.
+- Architecture: SwiftUI views → `AppModel` / `@Observable` stores → services (`SessionManager`, `BlockingEngine`, `SystemBlockingService` / `SystemBlockingClient`, `SyncCoordinator`, `FolderSyncEngine`, `SyncMerge`, `MozillaBrowserRestarter`, `CaptureStore`, `StatsStore`, `IntentionStore`, `SettingsStore`, `BlockedAttemptStore`). The privileged side is the separate `FocusBarHelper` target.
 - Persistence: `PersistenceController` actor, versioned JSON, atomic writes.
+- Sync: each Mac writes only its own `devices/device-<UUID>.json` snapshot in the chosen folder; `SyncMerge` unions records by UUID and resolves same-record edits by timestamp. `syncState.json` holds the local device ID and deletion tombstones.
 - The only third-party dependency is `KeyboardShortcuts` 1.17.x.
-- Tests use real persistence in temporary directories and an injectable clock; hosts rendering/validation and blocking-plan/system-blocking settings are covered. Run the `xcodebuild test` command above.
+- Tests use real persistence in temporary directories and an injectable clock; hosts rendering/validation, blocking-plan/system-blocking settings, sync merge rules, snapshot round trips, and two-device convergence are covered. Run the `xcodebuild test` command above.
 - Agent guidance: `AGENTS.md` is the canonical, auto-loaded OpenCode instruction file. `CLAUDE.md` is a symlink to it for Claude Code compatibility. `PLAN.md` is the live roadmap; read it for milestone status.
 
 ### UI smoke test
@@ -189,10 +215,11 @@ These cannot be fully validated by the automated test suite:
 6. Toggle **Start at login** and verify FocusBar relaunches after logging out and back in.
 7. Approve the system helper, verify the marked `/etc/hosts` section appears during a session, and verify it is removed on session end, after a force-quit lease expiry, and after a helper reinstall/reboot.
 8. Verify system-wide blocking in Safari, Chrome, Brave, and Zen; verify Firefox/Arc if installed; then check that enabling/disabling the setting mid-session updates the hosts section.
+9. On two Macs signed into the same iCloud account, choose the same iCloud Drive folder, verify history/captures/intentions/settings/blocked attempts arrive, confirm a deleted capture does not return, and confirm the active session and system-helper toggle stay local. Re-launch both apps and verify the folder remains accessible.
 
 ## Not in v1
 
-- iOS/iPadOS companion, iCloud sync, accounts, App Store distribution, notarization/release automation.
+- iOS/iPadOS companion, CloudKit/app-container iCloud sync, accounts, App Store distribution, notarization/release automation. Optional folder-based multi-Mac sync is available.
 - Firefox/Arc/Edge friendly tab-redirect integration (system-wide hosts blocking covers them, but without a custom blocked page).
 - AI features.
 - Network Extension content filtering, per-app network rules, wildcard domain blocking, or attempt telemetry for system-wide blocks.

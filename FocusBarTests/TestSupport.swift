@@ -28,7 +28,7 @@ final class TestEnvironment {
         directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("FocusBarTests-\(UUID().uuidString)", isDirectory: true)
         persistence = PersistenceController(directory: directory)
-        settings = SettingsStore(persistence: persistence)
+        settings = SettingsStore(persistence: persistence, dateProvider: { clock.now })
         stats = StatsStore(persistence: persistence)
         captures = CaptureStore(persistence: persistence)
         intentions = IntentionStore(persistence: persistence)

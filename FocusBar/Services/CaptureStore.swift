@@ -8,6 +8,8 @@ final class CaptureStore {
     private(set) var lastError: String?
 
     @ObservationIgnored private let persistence: PersistenceController
+    @ObservationIgnored var onLocalChange: (() -> Void)?
+    @ObservationIgnored var onDelete: ((UUID) async -> Void)?
 
     init(persistence: PersistenceController) {
         self.persistence = persistence
@@ -55,8 +57,25 @@ final class CaptureStore {
     }
 
     func delete(_ capture: Capture) async {
+        // Record the tombstone before removing the local copy so another Mac
+        // can't re-import it later.
+        await onDelete?(capture.id)
         captures.removeAll { $0.id == capture.id }
         await persist()
+    }
+
+    /// Replaces captures with the merged multi-Mac result without triggering a
+    /// new local-change sync.
+    func applySynced(_ records: [Capture]) async {
+        let sorted = records.sorted { $0.createdAt > $1.createdAt }
+        guard sorted != captures else { return }
+        captures = sorted
+        do {
+            try await persistence.save(captures, to: "captures.json")
+            lastError = nil
+        } catch {
+            lastError = "Couldn't save captures: \(error.localizedDescription)"
+        }
     }
 
     func clearError() {
@@ -67,6 +86,7 @@ final class CaptureStore {
         do {
             try await persistence.save(captures, to: "captures.json")
             lastError = nil
+            onLocalChange?()
         } catch {
             lastError = "Couldn't save captures: \(error.localizedDescription)"
         }

@@ -50,9 +50,13 @@ struct RootView: View {
             Divider()
 
             HStack(spacing: 12) {
-                Text("Local-only")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                Text(
+                    app.sync.isSyncing
+                        ? "Syncing…"
+                        : (app.settings.settings.syncEnabled ? "Sync on" : "Local-only")
+                )
+                .font(.caption2)
+                .foregroundStyle(.secondary)
                 Spacer()
                 Button("History") {
                     showHistory = true

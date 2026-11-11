@@ -7,8 +7,10 @@ final class BlockedAttemptStore {
     private(set) var attempts: [BlockedAttempt] = []
     private(set) var lastError: String?
 
+    nonisolated static let maximumCount = 5_000
+
     @ObservationIgnored private let persistence: PersistenceController
-    private let maximumCount = 5_000
+    @ObservationIgnored var onLocalChange: (() -> Void)?
 
     init(persistence: PersistenceController) {
         self.persistence = persistence
@@ -22,10 +24,27 @@ final class BlockedAttemptStore {
 
     func record(_ attempt: BlockedAttempt) async {
         attempts.insert(attempt, at: 0)
-        if attempts.count > maximumCount {
-            attempts.removeLast(attempts.count - maximumCount)
+        if attempts.count > Self.maximumCount {
+            attempts.removeLast(attempts.count - Self.maximumCount)
         }
         await persist()
+    }
+
+    /// Replaces blocked-attempt history with the merged multi-Mac result
+    /// without triggering a new local-change sync.
+    func applySynced(_ records: [BlockedAttempt]) async {
+        let sorted = records
+            .sorted { $0.timestamp > $1.timestamp }
+            .prefix(Self.maximumCount)
+        let limited = Array(sorted)
+        guard limited != attempts else { return }
+        attempts = limited
+        do {
+            try await persistence.save(attempts, to: "blockedAttempts.json")
+            lastError = nil
+        } catch {
+            lastError = "Couldn't save blocking history: \(error.localizedDescription)"
+        }
     }
 
     func count(sessionID: UUID) -> Int {
@@ -55,6 +74,7 @@ final class BlockedAttemptStore {
         do {
             try await persistence.save(attempts, to: "blockedAttempts.json")
             lastError = nil
+            onLocalChange?()
         } catch {
             lastError = "Couldn't save blocking history: \(error.localizedDescription)"
         }

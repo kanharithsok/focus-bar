@@ -27,10 +27,13 @@ SwiftUI Views
 AppModel (composition root) + @Observable stores & managers
     ↓
 Services: SessionManager, BlockingEngine, SystemBlockingService,
-          SystemBlockingClient, MozillaBrowserRestarter, CaptureStore,
-          StatsStore, IntentionStore, SettingsStore, BlockedAttemptStore
+          SystemBlockingClient, SyncCoordinator, FolderSyncEngine,
+          MozillaBrowserRestarter, CaptureStore, StatsStore,
+          IntentionStore, SettingsStore, BlockedAttemptStore
     ↓
 PersistenceController (actor, versioned JSON, atomic writes)
+    ↓ optional
+User-selected sync folder (e.g. iCloud Drive/FocusBar)
     ⇅ XPC
 FocusBarHelper (signed LaunchDaemon, marked /etc/hosts section)
 ```
@@ -55,8 +58,11 @@ FocusBarHelper (signed LaunchDaemon, marked /etc/hosts section)
 | `captures.json` | `[Capture]` distractions and Scatterfocus notes |
 | `intentions.json` | daily intentions and skipped days |
 | `blockedAttempts.json` | `[BlockedAttempt]` best-effort blocking history |
+| `syncState.json` | device ID, last sync time, and deletion tombstones (local only) |
 
 All files use `{ "schemaVersion": 1, "payload": ... }`. Statistics are always computed from `sessions.json` + `blockedAttempts.json`.
+
+When optional sync is enabled, the chosen folder contains only `devices/device-<UUID>.json` snapshots. Each snapshot includes sessions, captures, intentions, skipped days, blocked attempts, shared settings, and deletion tombstones. Active sessions and device-specific settings are never written there.
 
 ## 3. Milestones and status
 
@@ -178,12 +184,37 @@ Acceptance:
 - [x] Manual: opt-in Zen restart worked at session start/restore and session end. After the start restart, a normal Zen tab showed the cached YouTube shell as offline with no content; after the end restart, a normal Zen tab loaded the full YouTube homepage without a hard reload.
 - [ ] Manual: force-quit FocusBar during a real app session and verify lease cleanup; reboot and verify stale-block cleanup.
 
+### M7 — Optional multi-Mac sync
+
+Status: **implemented, verified by build + unit tests; two-Mac iCloud Drive propagation remains manual.**
+
+- Opt-in **folder-based sync** through a user-selected folder, typically `iCloud Drive/FocusBar`. This avoids iCloud/CloudKit entitlements, which are unavailable to the free Personal Team used by this project. It also works with any synced folder.
+- Each Mac writes only its own `devices/device-<UUID>.json` snapshot. Devices never write the same file, so one Mac cannot clobber another's history.
+- `SyncMerge` unions sessions, captures, intentions, skipped days, blocked attempts, and shared settings by record UUID. Same-record edits use `updatedAt` (sessions) or creation timestamps (captures/intentions/attempts), with a deterministic tie-break.
+- Capture and intention deletions are tombstoned in local `syncState.json` and included in snapshots, so deleted records do not reappear from another Mac's older snapshot.
+- Synced data: session history/reviews, captures, daily intentions, blocked-attempt history, blocklist presets, and shared session/blocking preferences.
+- Local data: active session, system-wide helper toggle, Zen/Firefox restart setting, start-at-login, notification permission, and sync folder configuration.
+- Shared settings use a timestamped last-writer-wins snapshot. Device-specific settings are never overwritten. Shared settings are not applied while a session is active; the next sync after the session ends applies them.
+- Sync triggers: app launch, debounced local changes, app activation, wake, and a roughly 60-second periodic check while enabled. Blocked-attempt writes are coalesced for 30 seconds.
+- File operations use `NSFileCoordinator` and atomic writes. Unreadable or newer-schema remote files are skipped with a warning; a newer-schema snapshot from this Mac stops the sync rather than overwriting it.
+- iCloud Drive is only the recommended transport. No FocusBar server, account, analytics, or direct network code is involved. Snapshot data counts against the user's existing iCloud storage.
+
+Acceptance:
+- [x] Sync settings UI with folder choice, enable/disable, status, warnings, and manual Sync Now.
+- [x] Snapshot round trips and two-device convergence covered by tests.
+- [x] Merge rules for sessions, captures, intentions, skipped days, blocked attempts, and shared settings covered by tests.
+- [x] Capture/intention tombstones survive re-import from an older snapshot.
+- [x] Device-specific settings remain local; active session is never included.
+- [x] Build and the full unit-test suite pass.
+- [ ] Manual: enable sync on two Macs with the same iCloud Drive folder, verify propagation in both directions, relaunch, and verify deletions/settings behave as described.
+- [ ] Manual: verify macOS folder-access permission survives relaunch and that an unavailable/offline iCloud Drive surfaces an error without blocking local use.
+
 ## 4. Key decisions and assumptions
 
 - **No Xcode project existed.** Generated one with XcodeGen; `project.yml` is authoritative.
 - **XcodeGen is a dev tool**, not a shipped dependency. The only app dependency is `KeyboardShortcuts` (1.17.0), as approved.
 - **Deployment target 14.0**, Swift 5 language mode for predictable concurrency behavior with AppKit observers; app is Apple Silicon friendly (universal-capable, built arm64 here).
-- **No sandbox** for v1: Apple Events to Safari/Chrome and app-bundle inspection require it; app is distributed locally, not via App Store. No network entitlement/use.
+- **No sandbox** for v1: Apple Events to Safari/Chrome and app-bundle inspection require it; app is distributed locally, not via App Store. No network entitlement or app-initiated network code; optional M7 sync writes only to a user-selected folder.
 - **Absolute `endDate`** is the source of truth. `now` is refreshed on a 1 s tick, on wake, and on relaunch. Sleep does not extend sessions.
 - **Completed sessions** ending while the app was closed are finalized at their planned end time. Reviews are offered for sessions that ended within 24 h; older ones are saved without a review prompt.
 - **Early-end rules apply to Hyperfocus.** Scatterfocus breaks can be ended immediately (low-stakes breaks), recorded as `endedEarly` without a reason.
@@ -197,7 +228,10 @@ Acceptance:
 - **The friendly active-tab guard is Safari + Chrome only.** The opt-in system-wide hosts block covers other browsers at the name-resolution level, with the documented cache/VPN/DoH limitations.
 - **YouTube is present but disabled** in the default social-media preset.
 - **No notifications request at launch**; permission is requested when the first session starts if notifications are enabled.
-- **App is local-first**: no network code, no analytics, no accounts.
+- **App is local-first**: no FocusBar servers, network code, analytics, or accounts. M7 sync is opt-in and writes only to a user-selected folder; the folder provider handles any network transfer.
+- **M7 uses folder-based sync, not CloudKit.** The project signs with a free Personal Team, and Apple does not allow iCloud/CloudKit entitlements for Personal Teams. Folder sync needs no entitlement or paid membership and uses the user's existing iCloud Drive storage. CloudKit remains a possible future upgrade if the project moves to a paid Apple Developer Program membership.
+- **M7 is eventually consistent.** Each device writes only its own snapshot. Records merge by UUID with timestamp-based last-writer-wins; settings merge as a timestamped snapshot. There is no conflict dialog.
+- **M7 keeps device-specific state local.** System-wide blocking, Zen/Firefox restart, notification permission, start-at-login, and sync configuration cannot be safely applied from another Mac.
 - **Start at login** uses `SMAppService.mainApp` and is user-toggleable in Settings. It is separate from the M6 system-blocking daemon.
 
 ## 5. Technical risks and limitations
@@ -213,6 +247,12 @@ Acceptance:
 - Deleting FocusBar while a session is active does not leave a permanent hosts block: the helper's lease expires after 30 seconds. Deleting the app does not automatically unregister the LaunchDaemon; before deletion, use **Remove helper**, or remove the stale background item in System Settings afterward. Browser-cached offline/error pages can outlive the helper cleanup until the browser is reloaded or restarted.
 - M6 is a root daemon. Its XPC surface must stay minimal, validate callers by code-signing requirement, and only touch the marked hosts section. A bug here can break name resolution, so writes are atomic and fail-open.
 - `/etc/hosts` cannot express wildcards and is bypassable by VPN/encrypted DNS/cached DNS/IP literals. It cannot count blocked attempts or serve a custom HTTPS page for other browsers.
+- M7 sync depends on the user's folder provider. iCloud Drive may delay upload/download, evict files, or fail when storage is full; FocusBar shows an error and retries, but it cannot force iCloud to sync.
+- M7 uses plain JSON snapshots, including session/capture text and blocked hostnames. The folder provider protects them under its own terms; FocusBar does not add end-to-end encryption.
+- M7 shared settings are last-writer-wins at the snapshot level. Simultaneous edits to different settings on both Macs can lose the older edit. Presets are not merged item-by-item.
+- M7 snapshots are full device views, not an operation log. Very large histories are capped for blocked attempts but grow with session/capture history; the engine skips remote snapshots over 25 MB.
+- A reinstall or lost `syncState.json` creates a new device ID. The old snapshot remains in the folder and is treated as another device; tombstones still prevent deleted records from returning.
+- Reusing the same local Application Support directory (for example by cloning a Mac) would duplicate the device ID and allow two Macs to write the same snapshot file. A fresh install should let FocusBar generate a new ID.
 
 ## 6. Verification commands
 
@@ -241,6 +281,10 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBarUITests \
 
 | Date | Check | Result |
 | --- | --- | --- |
+| 2026-11-11 | Signed Release 1.0.1 (build 2) build/install | **BUILD SUCCEEDED**; universal arm64+x86_64; codesign valid; installed in `/Applications`; launched |
+| 2026-11-11 | `xcodebuild ... build` (Debug, macOS, M7) | **BUILD SUCCEEDED** |
+| 2026-11-11 | `xcodebuild ... test` (macOS, M7) | **105 tests, 0 failures** |
+| 2026-11-11 | M7 sync merge/engine tests | Two-device convergence, tombstones, shared-settings timestamps, snapshot round trips, corrupt/newer-schema handling all pass |
 | 2026-11-09 | `xcodebuild ... build` (Debug, macOS) | **BUILD SUCCEEDED** |
 | 2026-11-09 | `xcodebuild ... test` (macOS) | **83 tests, 0 failures** |
 | 2026-11-09 | Built `Info.plist` | `LSUIElement = true`, `NSAppleEventsUsageDescription` present |
@@ -273,11 +317,12 @@ Automated coverage includes:
 - hostname validation, common-subdomain expansion, hosts marker rendering/removal, malformed-block rejection, file-manager round trips, and permission preservation;
 - system-wide settings decoding and blocking-plan decisions;
 - blocked-attempt dedup and statistics derivation;
+- M7 sync merge rules, deletion tombstones, shared-settings timestamps, per-device snapshot convergence, and corrupt/newer-schema handling;
 - AppleScript timeout/permission mapping.
 
 ## 8. Current state / next actions
 
-- v1 feature set implemented (M1–M6); M6 is opt-in from Settings.
+- v1 feature set implemented (M1–M6), plus M7 optional multi-Mac sync; M6 and M7 are opt-in from Settings.
 - Automated build and unit tests pass in this environment, along with the signed `FocusBarUITests` menu-bar smoke test. Already verified locally on macOS 27.2: Safari/Chrome Automation redirects; Safari/Chrome/Brave/Zen system-wide blocking; helper registration, hosts apply/remove, lease expiry, and reinstall cleanup; Zen restart at session start/end. See the verification log above.
 - Remaining manual, permission-dependent verification:
   1. Visually inspect the menu-bar-only behavior and popover layout on a real desktop (`FocusBarUITests` covers the layout smoke test).
@@ -287,4 +332,5 @@ Automated coverage includes:
   5. Register FocusBar as a login item and verify launch after logout/login.
   6. Verify Firefox/Arc if installed.
   7. Force-quit FocusBar during a real app session and verify lease cleanup; reboot and verify stale-block cleanup.
+  8. Verify M7 on two Macs with the same iCloud Drive folder: propagation, relaunch access, deletions, shared settings, and device-local active session/helper state.
 - Optional macOS Focus/Shortcuts integration is not implemented; it was marked optional in the brief.

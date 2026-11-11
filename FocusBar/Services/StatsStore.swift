@@ -8,6 +8,7 @@ final class StatsStore {
     private(set) var lastError: String?
 
     @ObservationIgnored private let persistence: PersistenceController
+    @ObservationIgnored var onLocalChange: (() -> Void)?
 
     init(persistence: PersistenceController) {
         self.persistence = persistence
@@ -21,6 +22,9 @@ final class StatsStore {
 
     /// Inserts or replaces a record by ID. Used both for new sessions and review updates.
     func upsert(_ record: SessionRecord) async {
+        var record = record
+        record.updatedAt = Date()
+
         if let index = sessions.firstIndex(where: { $0.id == record.id }) {
             sessions[index] = record
         } else {
@@ -28,6 +32,20 @@ final class StatsStore {
         }
         sessions.sort { $0.startDate > $1.startDate }
         await persist()
+    }
+
+    /// Replaces history with the merged multi-Mac result without triggering a
+    /// new local-change sync.
+    func applySynced(_ records: [SessionRecord]) async {
+        let sorted = records.sorted { $0.startDate > $1.startDate }
+        guard sorted != sessions else { return }
+        sessions = sorted
+        do {
+            try await persistence.save(sessions, to: "sessions.json")
+            lastError = nil
+        } catch {
+            lastError = "Couldn't save session history: \(error.localizedDescription)"
+        }
     }
 
     func record(id: UUID) -> SessionRecord? {
@@ -78,6 +96,7 @@ final class StatsStore {
         do {
             try await persistence.save(sessions, to: "sessions.json")
             lastError = nil
+            onLocalChange?()
         } catch {
             lastError = "Couldn't save session history: \(error.localizedDescription)"
         }

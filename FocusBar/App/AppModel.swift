@@ -20,11 +20,13 @@ final class AppModel {
     let capturePanel: CapturePanelController
     let notifications: NotificationService
     let loginItem: LoginItemManager
+    let sync: SyncCoordinator
 
     private(set) var startupWarning: String?
     private(set) var hasStarted = false
 
     @ObservationIgnored private var wakeObserver: NSObjectProtocol?
+    @ObservationIgnored private var activationObserver: NSObjectProtocol?
 
     init() {
         let persistence: PersistenceController
@@ -51,6 +53,17 @@ final class AppModel {
             statsStore: stats,
             settingsStore: settings
         )
+        let sync = SyncCoordinator(
+            persistence: persistence,
+            settings: settings,
+            stats: stats,
+            captures: captures,
+            intentions: intentions,
+            blockedAttempts: blockedAttempts,
+            canApplySharedSettings: { [weak sessionManager] in
+                sessionManager?.activeSession == nil
+            }
+        )
         let systemBlockingService = SystemBlockingService()
         let systemBlockingClient = SystemBlockingClient(service: systemBlockingService)
         let mozillaRestarter = MozillaBrowserRestarter()
@@ -74,6 +87,7 @@ final class AppModel {
         self.capturePanel = CapturePanelController()
         self.notifications = notifications
         self.loginItem = loginItem
+        self.sync = sync
 
         sessionManager.onSessionStarted = { [weak self] session in
             self?.beginBlocking(for: session)
@@ -92,6 +106,17 @@ final class AppModel {
         ) { [weak self] _ in
             Task { @MainActor in
                 await self?.sessionManager.refresh()
+                await self?.sync.syncNow()
+            }
+        }
+
+        activationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                await self?.sync.syncNow()
             }
         }
     }
@@ -107,6 +132,7 @@ final class AppModel {
         await blockedAttempts.load()
         systemBlockingService.refresh()
         await sessionManager.restore()
+        await sync.start()
         loginItem.refresh()
 
         let issues = await persistence.consumeLoadIssues()
@@ -141,6 +167,7 @@ final class AppModel {
         systemBlockingService.clearError()
         systemBlockingClient.clearError()
         mozillaRestarter.clearError()
+        sync.clearError()
         blockedAttempts.clearError()
         stats.clearError()
         captures.clearError()
@@ -156,6 +183,7 @@ final class AppModel {
             systemBlockingService.lastError,
             systemBlockingClient.lastError,
             mozillaRestarter.lastError,
+            sync.lastError,
             blockedAttempts.lastError,
             stats.lastError,
             captures.lastError,
@@ -176,6 +204,49 @@ final class AppModel {
             return
         }
         NSWorkspace.shared.open(url)
+    }
+
+    /// Shared-folder sync is opt-in. The panel starts in iCloud Drive when it
+    /// is available; any folder works, including Dropbox or an external drive.
+    func chooseSyncFolder() async {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = true
+        panel.prompt = "Use Folder"
+        panel.message = "Choose a folder that syncs between your Macs. For iCloud Drive, choose or create a FocusBar folder."
+        panel.directoryURL = iCloudDriveURL
+
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, var url = panel.url else { return }
+
+        // Selecting the iCloud Drive root should not scatter FocusBar's files
+        // among the user's documents.
+        if url.lastPathComponent == "com~apple~CloudDocs" {
+            url = url.appendingPathComponent("FocusBar", isDirectory: true)
+            try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        }
+
+        await sync.enable(folderURL: url)
+    }
+
+    func setSyncEnabled(_ enabled: Bool) async {
+        if enabled {
+            if settings.settings.syncFolderPath != nil {
+                await sync.enableStoredFolder()
+            } else {
+                await chooseSyncFolder()
+            }
+        } else {
+            await sync.disable()
+        }
+    }
+
+    private var iCloudDriveURL: URL? {
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs", isDirectory: true)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
     private func beginBlocking(for session: ActiveSession) {
@@ -238,6 +309,9 @@ final class AppModel {
     deinit {
         if let wakeObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
+        }
+        if let activationObserver {
+            NotificationCenter.default.removeObserver(activationObserver)
         }
     }
 }

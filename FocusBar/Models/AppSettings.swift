@@ -38,6 +38,16 @@ struct AppSettings: Codable, Equatable, Sendable {
     var notificationsEnabled: Bool
     var earlyEndDelaySeconds: Int
 
+    // Optional multi-Mac sync configuration. These are device-local and are
+    // never written to the shared folder.
+    var syncEnabled: Bool
+    var syncFolderPath: String?
+    var syncFolderBookmark: Data?
+    /// Timestamp of the last change to a shared setting. Device-specific
+    /// settings (system helper, browser restart, sync configuration) do not
+    /// update this value.
+    var sharedSettingsUpdatedAt: Date?
+
     init(
         commitMode: Bool,
         blockApps: Bool,
@@ -49,7 +59,11 @@ struct AppSettings: Codable, Equatable, Sendable {
         presets: [BlocklistPreset],
         selectedPresetID: UUID?,
         notificationsEnabled: Bool,
-        earlyEndDelaySeconds: Int
+        earlyEndDelaySeconds: Int,
+        syncEnabled: Bool = false,
+        syncFolderPath: String? = nil,
+        syncFolderBookmark: Data? = nil,
+        sharedSettingsUpdatedAt: Date? = nil
     ) {
         self.commitMode = commitMode
         self.blockApps = blockApps
@@ -62,6 +76,10 @@ struct AppSettings: Codable, Equatable, Sendable {
         self.selectedPresetID = selectedPresetID
         self.notificationsEnabled = notificationsEnabled
         self.earlyEndDelaySeconds = earlyEndDelaySeconds
+        self.syncEnabled = syncEnabled
+        self.syncFolderPath = syncFolderPath
+        self.syncFolderBookmark = syncFolderBookmark
+        self.sharedSettingsUpdatedAt = sharedSettingsUpdatedAt
     }
 
     static func defaults() -> AppSettings {
@@ -77,7 +95,11 @@ struct AppSettings: Codable, Equatable, Sendable {
             presets: [preset],
             selectedPresetID: preset.id,
             notificationsEnabled: true,
-            earlyEndDelaySeconds: 0
+            earlyEndDelaySeconds: 0,
+            syncEnabled: false,
+            syncFolderPath: nil,
+            syncFolderBookmark: nil,
+            sharedSettingsUpdatedAt: nil
         )
     }
 
@@ -93,6 +115,10 @@ struct AppSettings: Codable, Equatable, Sendable {
         case selectedPresetID
         case notificationsEnabled
         case earlyEndDelaySeconds
+        case syncEnabled
+        case syncFolderPath
+        case syncFolderBookmark
+        case sharedSettingsUpdatedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -115,6 +141,10 @@ struct AppSettings: Codable, Equatable, Sendable {
         presets = try container.decodeIfPresent([BlocklistPreset].self, forKey: .presets) ?? fallback.presets
         notificationsEnabled = try container.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? fallback.notificationsEnabled
         earlyEndDelaySeconds = try container.decodeIfPresent(Int.self, forKey: .earlyEndDelaySeconds) ?? fallback.earlyEndDelaySeconds
+        syncEnabled = try container.decodeIfPresent(Bool.self, forKey: .syncEnabled) ?? fallback.syncEnabled
+        syncFolderPath = try container.decodeIfPresent(String.self, forKey: .syncFolderPath)
+        syncFolderBookmark = try container.decodeIfPresent(Data.self, forKey: .syncFolderBookmark)
+        sharedSettingsUpdatedAt = try container.decodeIfPresent(Date.self, forKey: .sharedSettingsUpdatedAt)
 
         if let storedID = try container.decodeIfPresent(UUID.self, forKey: .selectedPresetID),
            presets.contains(where: { $0.id == storedID }) {

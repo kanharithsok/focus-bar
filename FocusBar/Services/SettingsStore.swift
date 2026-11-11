@@ -8,9 +8,15 @@ final class SettingsStore {
     private(set) var lastError: String?
 
     @ObservationIgnored private let persistence: PersistenceController
+    @ObservationIgnored private let dateProvider: () -> Date
+    @ObservationIgnored var onLocalChange: (() -> Void)?
 
-    init(persistence: PersistenceController) {
+    init(
+        persistence: PersistenceController,
+        dateProvider: @escaping () -> Date = { Date() }
+    ) {
         self.persistence = persistence
+        self.dateProvider = dateProvider
     }
 
     func load() async {
@@ -23,18 +29,50 @@ final class SettingsStore {
     }
 
     func update(_ mutation: (inout AppSettings) -> Void) async {
-        mutation(&settings)
-        settings = normalize(settings)
+        var candidate = settings
+        mutation(&candidate)
+        candidate = normalize(candidate)
+
+        let before = SharedSettingsSnapshot(settings: settings, updatedAt: .distantPast)
+        let after = SharedSettingsSnapshot(settings: candidate, updatedAt: .distantPast)
+        if before != after {
+            candidate.sharedSettingsUpdatedAt = dateProvider()
+        }
+
+        settings = candidate
         await save()
     }
 
-    func save() async {
+    func save(notify: Bool = true) async {
         do {
             try await persistence.save(settings, to: "settings.json")
             lastError = nil
+            if notify {
+                onLocalChange?()
+            }
         } catch {
             lastError = "Couldn't save settings: \(error.localizedDescription)"
         }
+    }
+
+    var sharedSettingsSnapshot: SharedSettingsSnapshot {
+        SharedSettingsSnapshot(settings: settings)
+    }
+
+    /// Ensures the first sync exports a timestamped local settings snapshot.
+    func ensureSharedSettingsTimestamp() async {
+        guard settings.sharedSettingsUpdatedAt == nil else { return }
+        settings.sharedSettingsUpdatedAt = dateProvider()
+        await save(notify: false)
+    }
+
+    /// Applies settings from another Mac only when they are newer. Device-local
+    /// fields (helper, browser restart, sync configuration) are preserved.
+    func applySharedSettings(_ snapshot: SharedSettingsSnapshot) async {
+        guard snapshot.updatedAt > (settings.sharedSettingsUpdatedAt ?? .distantPast) else { return }
+        snapshot.apply(to: &settings)
+        settings = normalize(settings)
+        await save(notify: false)
     }
 
     func preset(id: UUID?) -> BlocklistPreset? {

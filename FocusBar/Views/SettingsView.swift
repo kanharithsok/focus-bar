@@ -23,6 +23,7 @@ struct SettingsView: View {
                 sessionSection
                 blockingSection
                 systemBlockingSection
+                syncSection
                 presetsSection
                 shortcutSection
                 privacySection
@@ -36,6 +37,7 @@ struct SettingsView: View {
             app.loginItem.refresh()
             app.systemBlockingService.refresh()
             app.systemBlockingClient.refreshHelperStatus()
+            Task { await app.sync.syncNow() }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             app.loginItem.refresh()
@@ -285,6 +287,78 @@ struct SettingsView: View {
         }
     }
 
+    private var syncSection: some View {
+        SettingsSection(title: "Sync across Macs") {
+            VStack(alignment: .leading, spacing: 9) {
+                Toggle("Sync through a shared folder", isOn: syncEnabledBinding)
+
+                Text("Optional. FocusBar writes small JSON snapshots to a folder you choose, such as iCloud Drive/FocusBar. The folder provider syncs them to your other Mac. Both Macs must choose the same folder.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 6) {
+                    Image(systemName: "folder")
+                        .foregroundStyle(.secondary)
+                    Text(app.sync.folderDisplayPath)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer()
+                    Button("Choose Folder…") {
+                        Task { await app.chooseSyncFolder() }
+                    }
+                    .font(.caption)
+                }
+
+                HStack(spacing: 8) {
+                    Button("Sync Now") {
+                        Task { await app.sync.syncNow() }
+                    }
+                    .font(.caption)
+                    .disabled(!app.settings.settings.syncEnabled || app.sync.isSyncing)
+
+                    if app.sync.isSyncing {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+
+                    Spacer()
+
+                    Text(app.sync.statusText)
+                        .font(.caption2)
+                        .foregroundStyle(app.sync.lastError == nil ? Color.secondary : Color.red)
+                }
+
+                if let detail = app.sync.syncDetail, app.settings.settings.syncEnabled, app.sync.lastError == nil {
+                    Text(detail)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let warning = app.sync.lastWarning {
+                    Text(warning)
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if let error = app.sync.lastError {
+                    Text(error)
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Text("Session history, captures, intentions, blocked-attempt history, and shared preferences sync. The active session, system-helper toggle, browser-restart setting, and sync configuration stay on each Mac. Sync uses your existing iCloud Drive storage; FocusBar has no account or server. Changes can take a moment to arrive through iCloud Drive.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
     private var presetsSection: some View {
         SettingsSection(title: "Blocklist presets") {
             VStack(alignment: .leading, spacing: 8) {
@@ -352,7 +426,7 @@ struct SettingsView: View {
     private var privacySection: some View {
         SettingsSection(title: "Privacy and data") {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Everything stays on this Mac. There are no accounts, analytics, telemetry, cloud sync, or network calls.")
+                Text("Data is stored locally. If you enable sync, small JSON snapshots are written to the folder you choose and handled by that provider, such as iCloud Drive. There are no FocusBar accounts, servers, analytics, telemetry, or direct network calls.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -378,7 +452,7 @@ struct SettingsView: View {
     private var aboutSection: some View {
         SettingsSection(title: "About") {
             VStack(alignment: .leading, spacing: 5) {
-                Text("FocusBar 1.0.0 · macOS 14+")
+                Text("FocusBar 1.0.1 · macOS 14+")
                     .font(.caption)
                 Text("Local-first attention management. Blocking is best effort; FocusBar never force-quits apps or closes browser tabs.")
                     .font(.caption2)
@@ -404,6 +478,15 @@ struct SettingsView: View {
                     await app.settings.update { $0[keyPath: keyPath] = newValue }
                     app.blockingEngine.settingsDidChange(app.settings.settings)
                 }
+            }
+        )
+    }
+
+    private var syncEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { app.settings.settings.syncEnabled },
+            set: { newValue in
+                Task { await app.setSyncEnabled(newValue) }
             }
         )
     }

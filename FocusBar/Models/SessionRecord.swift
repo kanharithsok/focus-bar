@@ -19,6 +19,10 @@ struct SessionRecord: Identifiable, Codable, Equatable, Sendable {
     var earlyEndReason: String?
     var blockingSuspended: Bool
     var blocklistName: String?
+    /// Last local change (creation or review edit). Used only for optional
+    /// multi-Mac sync; older records decode with `nil` and fall back to
+    /// `actualEndDate`.
+    var updatedAt: Date?
 
     init(
         id: UUID = UUID(),
@@ -37,7 +41,8 @@ struct SessionRecord: Identifiable, Codable, Equatable, Sendable {
         note: String? = nil,
         earlyEndReason: String? = nil,
         blockingSuspended: Bool = false,
-        blocklistName: String? = nil
+        blocklistName: String? = nil,
+        updatedAt: Date? = nil
     ) {
         self.id = id
         self.kind = kind
@@ -56,6 +61,7 @@ struct SessionRecord: Identifiable, Codable, Equatable, Sendable {
         self.earlyEndReason = earlyEndReason
         self.blockingSuspended = blockingSuspended
         self.blocklistName = blocklistName
+        self.updatedAt = updatedAt
     }
 
     var actualDuration: TimeInterval {
