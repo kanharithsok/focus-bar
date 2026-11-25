@@ -212,7 +212,7 @@ If a JSON file is unreadable, FocusBar moves it aside as `filename.corrupt-<time
 - Sync: each Mac writes only its own `devices/device-<UUID>.json` snapshot in the chosen folder; `SyncMerge` unions records by UUID and resolves same-record edits by timestamp. `syncState.json` holds the local device ID and deletion tombstones.
 - The only third-party dependency is `KeyboardShortcuts` 1.17.x.
 - Tests use real persistence in temporary directories and an injectable clock; hosts rendering/validation, blocking-plan/system-blocking settings, sync merge rules, snapshot round trips, and two-device convergence are covered. Run the `xcodebuild test` command above.
-- Agent guidance: `AGENTS.md` is the canonical, auto-loaded OpenCode instruction file. `CLAUDE.md` is a symlink to it for Claude Code compatibility. `PLAN.md` is the live roadmap; read it for milestone status.
+- Agent guidance: `AGENTS.md` is the canonical, auto-loaded OpenCode instruction file. `CLAUDE.md` is a symlink to it for Claude Code compatibility. `PLAN.md` is the milestone and verification history; `docs/ROADMAP.md` is the task-level factory roadmap. The factory commands are `/factory-start`, `/factory-next`, `/factory-plan`, `/factory-add-task`, `/factory-status`, `/factory-test`, `/factory-review`, `/factory-security-audit`, `/factory-release`, and `/factory-help`.
 
 ### UI smoke test
 
