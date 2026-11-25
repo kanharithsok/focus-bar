@@ -2,10 +2,10 @@
 
 This is the task-level execution roadmap for the FocusBar software factory. `PLAN.md` remains the milestone and verification history; `AGENTS.md` remains the binding rule set. Do not rewrite `PLAN.md` history to match this file.
 
-- Current status (2026-11-25): FocusBar v1.0.1, M1–M7 implemented. No factory task has been executed yet.
-- Active task: `FB-001` (TODO).
-- Next action: `/factory-next FB-001`.
-- Blockers: none for `FB-001`. The manual-verification tasks require the owner on a real desktop and cannot be completed by an agent alone.
+- Current status (2026-11-25): FocusBar v1.0.1, M1–M7 implemented. `FB-001` baseline verified: factory validation PASS, Debug build PASS, 105 unit tests with 0 failures. Signed UI smoke NOT RUN (no code-signing identity available).
+- Active task: None.
+- Next action: `/factory-plan` to refine/promote a `BACKLOG` task, or `/factory-add-task` for new work. Manual gates require the owner on a real desktop.
+- Blockers: No code blocker. The signed UI smoke and manual TCC/helper/browser/two-Mac checks need a signed build and/or the owner on a real desktop; see `FU-021` and `FB-002`–`FB-008`.
 
 ## Status vocabulary
 
@@ -20,13 +20,13 @@ This is the task-level execution roadmap for the FocusBar software factory. `PLA
 
 ## Critical path
 
-`FB-001` establishes current build/test evidence. Manual gates (`FB-002`–`FB-008`) run before a public release. `FB-009`/`FB-010` are quality/security hardening tasks that can run in parallel with owner-driven manual checks once `FB-001` is done.
+`FB-001` is complete and establishes the current build/test evidence. Manual gates (`FB-002`–`FB-008`) run before a public release. `FB-009`/`FB-010` are quality/security hardening tasks that can run in parallel with owner-driven manual checks.
 
-## Active tasks
+## Task queue
 
 ### FB-001 — Verify the factory baseline
 
-- Status: TODO
+- Status: DONE
 - Priority: P1
 - Type: verification
 - Dependencies: None
@@ -54,12 +54,12 @@ The factory was adopted without rebuilding or retesting the app. Establish a tru
 
 **Acceptance criteria**
 
-- [ ] Factory validation PASS, with output captured.
-- [ ] Debug build result recorded as PASS/FAIL/BLOCKED/NOT RUN with the exact command.
-- [ ] Unit-test result recorded with test count and failures.
-- [ ] Signed UI smoke result recorded as PASS/BLOCKED/NOT RUN with the reason.
-- [ ] No application source, project, dependency, or test changed by this task.
-- [ ] `.factory/STATE.md` and `.factory/WORK_LOG.md` updated with real evidence.
+- [x] Factory validation PASS, with output captured.
+- [x] Debug build result recorded as PASS/FAIL/BLOCKED/NOT RUN with the exact command.
+- [x] Unit-test result recorded with test count and failures.
+- [x] Signed UI smoke result recorded as PASS/BLOCKED/NOT RUN with the reason.
+- [x] No application source, project, dependency, or test changed by this task.
+- [x] `.factory/STATE.md` and `.factory/WORK_LOG.md` updated with real evidence.
 
 **Security / privacy / permissions**
 
@@ -86,11 +86,18 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBarUITests \
 
 **Evidence**
 
-None yet.
+- Factory validation: **PASS** — 2026-11-25, `bash scripts/validate-factory.sh`; full output captured locally, not committed.
+- Debug build: **PASS** — 2026-11-25, `xcodebuild -project FocusBar.xcodeproj -scheme FocusBar -configuration Debug -destination 'platform=macOS' build CODE_SIGNING_ALLOWED=NO`; `** BUILD SUCCEEDED **`. One benign Xcode AppIntents metadata warning (no AppIntents dependency); no Swift compiler warnings.
+- Unit tests: **PASS** — 2026-11-25, `xcodebuild -project FocusBar.xcodeproj -scheme FocusBar -destination 'platform=macOS' test CODE_SIGNING_ALLOWED=NO`; **105 tests, 0 failures**; `** TEST SUCCEEDED **`.
+- Signed UI smoke: **NOT RUN** — `security find-identity -v -p codesigning` reported 0 code-signing identities in this environment, so the signed `FocusBarUITests` scheme could not be exercised. Tracked as `FU-021`.
+- Working tree: clean before and after; `git diff --check` PASS; no application source, project, dependency, or test changes.
+- Environment: macOS 27.2 arm64, Xcode 27.2 (27B52), Swift 6.4.2 compiler with Swift 5 language mode, XcodeGen 2.48.0, deployment target macOS 14.0.
+
+No new gap was found in the automated baseline. `FU-021` covers the missing signed UI evidence.
 
 ## Manual verification gates
 
-These tasks require a real macOS desktop session and, for permission/helper checks, a signed build and possibly a second Mac. They are `BACKLOG` so `/factory-next` does not attempt them without the owner present. Promote one to `TODO` only when the owner is available to perform or observe the check.
+These tasks require a real macOS desktop session and, for permission/helper checks, a signed build and possibly a second Mac. They are `BACKLOG` so `/factory-next` does not attempt them without the owner present. `FB-001` is now `DONE`, so their dependency is satisfied; promote one to `TODO` only when the owner is available to perform or observe the check.
 
 ### FB-002 — Verify app hide and normal quit requests
 
@@ -266,7 +273,9 @@ No additional tasks are captured. Add future work with `/factory-add-task`; do n
 
 ## Completed tasks
 
-None yet. Product milestones and their verification evidence live in `PLAN.md` §3 and §7.
+- **FB-001 — Verify the factory baseline** — DONE 2026-11-25. Factory validation PASS; Debug build PASS; 105 unit tests, 0 failures; signed UI smoke NOT RUN (no code-signing identity); no source/project/test changes. Evidence in the task block above and `.factory/WORK_LOG.md`.
+
+Product milestones and their verification evidence live in `PLAN.md` §3 and §7.
 
 ## Task ID rules
 

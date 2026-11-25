@@ -24,6 +24,7 @@ Durable register for known gaps, accepted limitations, and deferred work. Every 
 | FU-018 | Root helper `/etc/hosts` writes cannot be fully validated by automated tests | `AGENTS.md` / `PLAN.md` §5 | Before release and after helper/hosts changes | Agent + product owner | OPEN — `FB-005` + `FB-010`; unit tests plus signed manual checks |
 | FU-019 | README screenshots require a manual `xcresulttool` export | README development notes | When screenshots are updated | Agent | OPEN — accepted development workflow; no runtime impact |
 | FU-020 | There is no automated TCC/browser/daemon end-to-end test harness | `AGENTS.md` manual-verification list | If CI/desktop automation is introduced | Product owner | OPEN — accepted limitation; manual matrix remains authoritative |
+| FU-021 | Signed `FocusBarUITests` menu-bar smoke test was not run on 2026-11-25 because no code-signing identities are installed in the agent environment | `FB-001` baseline | Before next release or whenever a signed build is available | Product owner | OPEN — release gate; run the signed UI smoke and record evidence |
 
 ## Review rules
 
