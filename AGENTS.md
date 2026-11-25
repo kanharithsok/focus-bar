@@ -2,9 +2,10 @@
 
 This is the canonical project instruction file for OpenCode and other agents.
 `CLAUDE.md` is a symlink to this file for Claude Code compatibility.
-`PLAN.md` is the live roadmap/status document; `README.md` is user-facing
-documentation. Read those when the task needs milestone context or product
-behavior.
+`PLAN.md` is the milestone and verification history; `docs/ROADMAP.md` is the
+task-level factory roadmap; `README.md` is user-facing documentation. Read the
+relevant docs when the task needs product, architecture, security, or release
+context.
 
 ## Project
 
@@ -33,6 +34,54 @@ xcodebuild -project FocusBar.xcodeproj -scheme FocusBarUITests \
   CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Automatic \
   CODE_SIGN_IDENTITY="Apple Development" DEVELOPMENT_TEAM=YOUR_TEAM_ID
 ```
+
+## Factory workflow
+
+FocusBar uses a durable software-factory workflow adapted from the `dak-peak`
+setup. Commands run in the current OpenCode session; skills load on demand.
+Progress survives across sessions through these files:
+
+- `.factory/STATE.md` — concise current state, verified foundation, blockers.
+- `.factory/WORK_LOG.md` — append-only history of completed/blocked tasks.
+- `.factory/TASK_TEMPLATE.md` — task definition standard.
+- `docs/ROADMAP.md` — `FB-NNN` task roadmap and status vocabulary.
+- `docs/FOLLOW_UPS.md` — durable register for gaps and accepted limitations.
+- `docs/DECISIONS.md` — decision index (new material decisions get a `D-` entry).
+- `docs/QUALITY_AND_TESTING.md`, `docs/SECURITY_AND_PRIVACY.md`,
+  `docs/THREAT_MODEL.md`, `docs/DEPENDENCIES.md`, `docs/RELEASE_CHECKLIST.md` —
+  the operating rules referenced by the commands.
+
+Commands:
+
+| Command | Purpose |
+| --- | --- |
+| `/factory-start` | Inspect, initialize, or resume; reconcile state with evidence. |
+| `/factory-plan` | Refine the roadmap without coding. |
+| `/factory-add-task "…"` | Capture a future `BACKLOG` task without implementation. |
+| `/factory-next [FB-ID]` | Implement exactly one dependency-ready task. |
+| `/factory-status` | Read-only progress report. |
+| `/factory-test [scope]` | Run the right tests/diagnostics. |
+| `/factory-review [scope]` | Review the current diff and fix only clear in-scope defects. |
+| `/factory-security-audit [scope]` | Security/privacy audit. |
+| `/factory-release` | Release gates and GO/NO-GO; never deploys. |
+| `/factory-help` | Explain the workflow. |
+
+Factory rules:
+
+- Read `AGENTS.md`, `.factory/STATE.md`, `docs/ROADMAP.md`, and
+  `docs/FOLLOW_UPS.md` before editing. Load the relevant skills.
+- One task per `/factory-next` call. `BACKLOG` tasks are not eligible until
+  `/factory-plan` or the owner promotes them to `TODO`.
+- Manual-verification tasks (`FB-002`–`FB-008`) need the owner on a real desktop.
+  Never claim a TCC, browser, helper, or two-Mac check passed from unit tests.
+- A task is `DONE` only when every acceptance criterion and required
+  verification passed, with evidence in the task/state/work log.
+- Every remaining issue needs a disposition: an `FB-` task, an `FU-` entry, a
+  release-checklist gate, or an accepted limitation in the relevant decision.
+- Do not commit, push, tag, deploy, publish, notarize, change signing, register
+  or unregister the helper, delete sync folders, or reset user data without
+  explicit owner instruction.
+- Run `bash scripts/validate-factory.sh` after changing factory files.
 
 ## Architecture rules
 
